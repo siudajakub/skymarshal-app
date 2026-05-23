@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+@theme {
+  --color-tactical-bg: #0B0F19;
+  --color-tactical-card: rgba(15, 23, 42, 0.5);
+  --color-tactical-border: #1E293B;
+  --color-tactical-cyan: #00F0FF;
+  --color-tactical-orange: #FFB800;
+  --color-tactical-red: #FF2E93;
+  --color-tactical-green: #00E676;
+}
+
+@layer base {
+  body {
+    @apply bg-tactical-bg text-slate-100 font-sans antialiased overflow-hidden select-none;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+}
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00F0FF;
+}
+
+/* Radar Sweep Animation */
+@keyframes radar-sweep {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.radar-sweep {
+  animation: radar-sweep 4s linear infinite;
+  transform-origin: center;
+}
+
+/* Leaflet Customizations to fit the C2 layout */
+.leaflet-container {
+  background: #0B0F19 !important;
+  font-family: inherit;
+}
+
+.leaflet-bar {
+  border: 1px solid #1E293B !important;
+  box-shadow: none !important;
+}
+
+.leaflet-bar a {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  color: #00F0FF !important;
+  border-bottom: 1px solid #1E293B !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #00F0FF !important;
+  color: #0B0F19 !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(15, 23, 42, 0.9) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #00F0FF !important;
+  border-radius: 4px !important;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid #00F0FF !important;
+}
