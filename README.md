@@ -1,16 +1,92 @@
-# React + Vite
+# 🌌 SKYMARSHAL C2 TAC-NET: System Taktycznego Zarządzania i Koordynacji Flotą UAV
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**SKYMARSHAL C2 TAC-NET** (Tactical Command & Control Network) to zaawansowana, wielozadaniowa platforma dyspozytorska klasy **dual-use** (podwójnego zastosowania), zaprojektowana specjalnie dla miasta Stalowa Wola w ramach hackathonu **SpaceShield Hack 2026**.
 
-Currently, two official plugins are available:
+System integruje rozproszone floty bezzałogowych statków powietrznych (UAV) podlegające różnym służbom miejskim i ratowniczym (Policja, Państwowa Straż Pożarna, Ochotnicza Straż Pożarna, Centrum Zarządzania Kryzysowego) w spójne, inteligentne środowisko operacyjne zdolne do reagowania na incydenty cywilne, kryzysowe oraz militarne.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🗺️ Główne Funkcjonalności Systemu
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Integracja z GUGiK WMS (Ortofotomapa)
+*   Dynamiczny podkład satelitarny wysokiej rozdzielczości pobierany na żywo bezpośrednio z rządowych serwerów **Geoportal.gov.pl** (Główny Urząd Geodezji i Kartografii).
+*   Możliwość szybkiego przełączania między minimalistycznym trybem taktycznym (bazującym na ciemnym podkładzie kartograficznym ułatwiającym percepcję telemetryczną) a trybem **GUGiK ORTO** dla maksymalnej precyzji terenowej.
 
-## Expanding the ESLint configuration
+### 2. Koordynacja Służb Ratowniczych i Mundurowych (Dual-use)
+*   **Scenariusz masowy/kryzysowy**: Jedno przyciskowe wyzwalanie skoordynowanej akcji w przypadku zmasowanego pożaru lub naruszenia bezpieczeństwa na terenie Zakładów Huty Stalowa Wola (HSW).
+*   Automatyczne delegowanie wielu jednostek (np. dron Policji do zabezpieczenia obwodu i dron Straży Pożarnej do zwiadu termowizyjnego) do wspólnego celu z różnymi pułapami operacyjnymi w celu dekonfliktacji.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 3. Autorski Silnik Omijania Stref (Arc Avoidance)
+*   **Multi-Point Straight-Segment Bypass**: Silnik wyznaczania bezpiecznych trajektorii lotu omijający wojskową strefę zakazaną **P-01 (HSW)**.
+*   System automatycznie analizuje linię prostą między startem a celem, wykrywa kolizję z obszarem chronionym oraz generuje ciasny wielobok omijający (3 punkty pośrednie z bezpiecznym buforem 300 metrów), co eliminuje konieczność wykonywania nadrabiających drogę, okrężnych tras.
+
+### 4. Przepisy U-Space i Walidacja UTM (PansaUTM)
+*   **Weryfikacja Pułapów**: Sztywne ograniczenie wysokości lotu do **120m AGL** (Above Ground Level) w Kreatorze Misji zgodnie z przepisami kategorii Otwartej EASA/ULC z systemem ostrzeżeń.
+*   **Integracja PansaUTM**: Emulacja zgłaszania planów lotu i przydzielania unikalnych kodów transpondera **XPNDR** do weryfikacji tożsamości w krajowym systemie UTM.
+*   **Monitoring Zakłóceń EM**: Ostrzeżenia przed anomaliami elektromagnetycznymi i radiowymi w strefie Elektrociepłowni Stalowa Wola **R-05** z dynamicznym wykresem szumu tła.
+
+### 5. Nowoczesny i Ergonomiczny Kreator Misji (Side-by-side)
+*   Przebudowany interfejs w układzie side-by-side umieszczający panel planowania obok interaktywnej mapy, co całkowicie zapobiega zasłanianiu obszaru operacyjnego.
+*   W pełni interaktywne wskazywanie celów poprzez kliknięcie na mapie.
+
+### 6. Procedury Operacyjne Służb
+*   Dedykowany panel prezentujący stan gotowości procedur operacyjnych (Zabezpieczanie Terenu, Skan Termiczny, Powrót Awaryjny RTH po wyczerpaniu akumulatora).
+
+---
+
+## 🛠️ Stos Technologiczny (Tech Stack)
+
+Aplikacja została zbudowana z zachowaniem najwyższych standardów wydajnościowych oraz estetycznych:
+
+*   **Szkielet aplikacyjny**: React 19 (Vite)
+*   **Silnik mapowy**: React Leaflet / Leaflet.js
+*   **Warstwa wizualizacji danych**: Recharts (dynamiczne wykresy szumu elektromagnetycznego na żywo)
+*   **Stylizacja i UX**: Vanilla CSS + Tailwind CSS (szklany efekt *glassmorphism*, wyszukana paleta ciemnych barw taktycznych, płynne mikro-animacje i przejścia)
+*   **Efekty Dźwiękowe**: Web Audio API (dynamicznie generowane dźwięki sonaru i alertów bezpośrednio w przeglądarce, bez zewnętrznych plików audio).
+
+---
+
+## 📂 Struktura Dokumentacji Projektowej
+
+Dla pełnej przejrzystości i spójności projektu, w repozytorium znajdują się dedykowane pliki dokumentacji:
+
+1.  [**`README.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/README.md) – Niniejszy plik wprowadzający i instrukcja uruchomienia.
+2.  [**`ARCHITECTURE.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/ARCHITECTURE.md) – Szczegółowy opis architektury produkcyjnej, integracji z DJI Cloud API, PansaUTM (PAŻP), systemami SWD-ST oraz bazą danych PostgreSQL/PostGIS.
+3.  [**`SOURCES.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/SOURCES.md) – Wykaz jawnych publicznych źródeł danych przestrzennych i prawnych (wymóg formalny regulaminu).
+4.  [**`PITCH_DECK.md`**](file:///Users/j/Spaceshield/dualuse/PITCH_DECK.md) – Gotowy szablon prezentacji inwestycyjnej (10 slajdów) oraz profesjonalny scenariusz wideo demonstracyjnego dla jury.
+5.  [**`AGENTS.MD`**](file:///Users/j/Spaceshield/dualuse/AGENTS.MD) – Dynamiczna karta stanu projektu dla deweloperów i agentów AI (Context Compact).
+
+---
+
+## 🚀 Uruchomienie Lokalne i Budowa
+
+Aby uruchomić aplikację w lokalnym środowisku deweloperskim:
+
+### Wymagania wstępne
+Upewnij się, że masz zainstalowane środowisko **Node.js** (rekomendowana wersja v18 lub nowsza) oraz **npm**.
+
+### Klonowanie i instalacja zależności
+Przejdź do folderu aplikacji:
+```bash
+cd skymarshal-app
+npm install
+```
+
+### Uruchomienie serwera deweloperskiego
+Uruchom lokalny serwer Vite:
+```bash
+npm run dev
+```
+Aplikacja będzie dostępna pod adresem: [**http://localhost:5173/**](http://localhost:5173/)
+
+### Budowanie wersji produkcyjnej
+Aby zbudować zoptymalizowaną, czystą wersję produkcyjną bez ostrzeżeń i błędów:
+```bash
+npm run build
+```
+Zbudowane pliki trafią do katalogu `/dist`.
+
+---
+
+## 🇵🇱 100% Spolszczony Interfejs
+Zgodnie z wymaganiami, cały interfejs użytkownika, komunikaty o błędach, opisy telemetrii HUD, priorytety incydentów oraz statusy są w 100% przetłumaczone na język polski, a atrybut językowy dokumentu w `index.html` został ustawiony na `lang="pl"`.

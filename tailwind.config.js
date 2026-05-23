@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,6 +8,54 @@ export default {
   theme: {
     extend: {
       colors: {
+        "outline": "#3f3f46",
+        "on-secondary-fixed": "#e4e4e7",
+        "error-container": "#450a0a",
+        "surface": "#09090b",
+        "surface-variant": "#18181b",
+        "outline-variant": "#27272a",
+        "on-tertiary-container": "#f5f3ff",
+        "on-secondary-container": "#d1d5db",
+        "on-primary-container": "#ffffff",
+        "on-error-container": "#fca5a5",
+        "surface-container-low": "#111113",
+        "on-background": "#fafafa",
+        "primary-fixed": "#e0e2ff",
+        "inverse-on-surface": "#09090b",
+        "error": "#ef4444",
+        "on-tertiary-fixed-variant": "#c4b5fd",
+        "surface-container-high": "#1c1c1f",
+        "tertiary-fixed": "#ede9fe",
+        "tertiary-container": "#4c1d95",
+        "surface-dim": "#09090b",
+        "secondary": "#71717a",
+        "surface-container-lowest": "#000000",
+        "tertiary": "#8b5cf6",
+        "on-tertiary": "#ffffff",
+        "tertiary-fixed-dim": "#c4b5fd",
+        "on-primary-fixed": "#09090b",
+        "primary-container": "#312e81",
+        "on-primary-fixed-variant": "#6366f1",
+        "secondary-fixed": "#3f3f46",
+        "secondary-container": "#27272a",
+        "on-secondary": "#ffffff",
+        "on-primary": "#ffffff",
+        "on-surface-variant": "#a1a1aa",
+        "surface-container-highest": "#27272a",
+        "secondary-fixed-dim": "#52525b",
+        "background": "#020203",
+        "surface-tint": "#6366f1",
+        "on-surface": "#f4f4f5",
+        "inverse-primary": "#818cf8",
+        "primary-fixed-dim": "#a5b4fc",
+        "on-secondary-fixed-variant": "#d1d5db",
+        "surface-container": "#121214",
+        "primary": "#6366f1",
+        "on-tertiary-fixed": "#1e1b4b",
+        "on-error": "#ffffff",
+        "surface-bright": "#1e1e21",
+        "inverse-surface": "#f4f4f5",
+        // Keeping the old ones for compatibility with Map layers (Leaflet) if needed, but the new UI uses the new ones.
         tactical: {
           bg: "#0B0F19",
           card: "rgba(15, 23, 42, 0.5)",
@@ -16,6 +65,18 @@ export default {
           red: "#FF2E93",
           green: "#00E676",
         }
+      },
+      borderRadius: {
+        "DEFAULT": "0.5rem",
+        "lg": "1rem",
+        "xl": "1.5rem",
+        "full": "9999px"
+      },
+      fontFamily: {
+        "headline": ["Plus Jakarta Sans"],
+        "display": ["Plus Jakarta Sans"],
+        "body": ["Plus Jakarta Sans"],
+        "label": ["Plus Jakarta Sans"]
       }
     },
   },

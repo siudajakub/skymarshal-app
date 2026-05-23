@@ -1,28 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Shield, 
-  Radio, 
-  Activity, 
-  AlertTriangle, 
-  Compass, 
-  Battery, 
-  Cpu, 
-  Navigation, 
-  AlertOctagon, 
-  Wind, 
-  Eye, 
-  Wifi, 
-  PlusCircle, 
-  Play, 
-  CheckCircle,
-  Volume2,
-  VolumeX,
-  Crosshair,
-  Send
-} from 'lucide-react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, Polyline, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, Circle, Polyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { LineChart, Line, ResponsiveContainer, YAxis } from 'recharts';
+import { getDistanceMeters, getDistanceToSegment, calculateRoute } from './utils/geoUtils';
+import { commandCenterIcon, waterStationIcon, getDroneIcon } from './data/mapConfig';
+import { INITIAL_DRONES, INITIAL_INCIDENTS, CRISIS_SCENARIOS } from './data/mockData';
 
 // Web Audio API Synthesizer
 const playSound = (type) => {
@@ -61,101 +43,49 @@ const playSound = (type) => {
   }
 };
 
-// Utility for UTM distances
-const getDistanceMeters = (p1, p2) => {
-  const R = 6371e3;
-  const dLat = (p2[0]-p1[0]) * Math.PI/180;
-  const dLng = (p2[1]-p1[1]) * Math.PI/180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-            Math.cos(p1[0] * Math.PI/180) * Math.cos(p2[0] * Math.PI/180) *
-            Math.sin(dLng/2) * Math.sin(dLng/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+
+const getStatusLabel = (status) => {
+  switch (status) {
+    case 'STANDBY': return 'W GOTOWOŚCI';
+    case 'EN_ROUTE': return 'W LOCIE';
+    case 'ENGAGED': return 'W AKCJI';
+    case 'OFFLINE': return 'NIEAKTYWNY';
+    case 'LINK_LOST': return 'UTRATA SYGNAŁU (RTH)';
+    default: return status;
+  }
 };
 
-// Distance from point to line segment
-const getDistanceToSegment = (p, a, b) => {
-  const R = 6371e3;
-  const latScale = Math.PI / 180;
-  const lngScale = Math.cos(p[0] * Math.PI / 180) * Math.PI / 180;
-  const pCart = [0, 0];
-  const aCart = [(a[0] - p[0]) * latScale * R, (a[1] - p[1]) * lngScale * R];
-  const bCart = [(b[0] - p[0]) * latScale * R, (b[1] - p[1]) * lngScale * R];
-  const l2 = (aCart[0] - bCart[0]) ** 2 + (aCart[1] - bCart[1]) ** 2;
-  if (l2 === 0) return Math.sqrt(aCart[0]**2 + aCart[1]**2);
-  let t = ((pCart[0] - aCart[0]) * (bCart[0] - aCart[0]) + (pCart[1] - aCart[1]) * (bCart[1] - aCart[1])) / l2;
-  t = Math.max(0, Math.min(1, t));
-  const proj = [aCart[0] + t * (bCart[0] - aCart[0]), aCart[1] + t * (bCart[1] - aCart[1])];
-  return Math.sqrt(proj[0]**2 + proj[1]**2);
+const getPriorityLabel = (priority) => {
+  switch (priority) {
+    case 'CRITICAL': return 'KRYTYCZNY';
+    case 'HIGH': return 'WYSOKI';
+    case 'MEDIUM': return 'ŚREDNI';
+    case 'LOW': return 'NISKI';
+    default: return priority;
+  }
 };
 
-function MapController({ centerCoords }) {
-  const map = useMap();
-  useEffect(() => {
-    if (centerCoords) {
-      map.flyTo(centerCoords, 14, { duration: 1.5 });
-    }
-  }, [centerCoords, map]);
-  return null;
-}
 
-function MapClickHandler({ activeTab, onMapClick }) {
-  useMapEvents({
-    click(e) {
-      if (activeTab === 'planner') {
-        onMapClick([e.latlng.lat, e.latlng.lng]);
-      }
-    }
-  });
-  return null;
-}
 
-const commandCenterIcon = L.divIcon({
-  className: 'custom-leaflet-icon',
-  html: `<div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid #00F0FF; background: rgba(15, 23, 42, 0.9); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px #00F0FF;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00F0FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-  </div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
-  popupAnchor: [0, -16]
-});
+import MapSection from './components/MapSection';
+import SidebarPanel from './components/SidebarPanel';
+import BootSequence from './components/BootSequence';
 
-const waterStationIcon = L.divIcon({
-  className: 'custom-leaflet-icon',
-  html: `<div style="width: 24px; height: 24px; border-radius: 50%; border: 1px solid #00E676; background: rgba(15, 23, 42, 0.9); display: flex; align-items: center; justify-content: center;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#00E676" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-  </div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-  popupAnchor: [0, -12]
-});
 
-const getDroneIcon = (department) => {
-  let color = '#00F0FF';
-  if (department.includes('Policja')) color = '#00F0FF';
-  if (department.includes('Straż') || department.includes('OSP')) color = '#FFB800';
-  if (department.includes('Kryzysowe')) color = '#00E676';
-
-  return L.divIcon({
-    className: 'custom-leaflet-icon',
-    html: `<div style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid ${color}; background: rgba(15, 23, 42, 0.9); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px ${color}80;">
-      <div style="width: 10px; height: 10px; border-radius: 50%; background: ${color};" class="animate-pulse"></div>
-    </div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-    popupAnchor: [0, -14]
-  });
-};
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [activeTab, setActiveTab] = useState('map');
   const [selectedDroneId, setSelectedDroneId] = useState(null);
-  const [systemTime, setSystemTime] = useState(new Date().toLocaleTimeString());
+  const [systemTime, setSystemTime] = useState(new Date().toLocaleTimeString('pl-PL', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [showOrtoLayer, setShowOrtoLayer] = useState(false);
 
-  // Mission Planner State
   const [draftMission, setDraftMission] = useState({
     droneId: '',
-    type: 'Search & Rescue',
+    type: 'Poszukiwanie i Ratownictwo',
     altitude: 100,
     targetCoords: null,
     bypassP01: false
@@ -165,19 +95,42 @@ export default function App() {
   const [alertMessage, setAlertMessage] = useState(null);
   const [mapFocusCoords, setMapFocusCoords] = useState(null);
 
+  useEffect(() => {
+    if (missionStatus === 'APPROVED' || missionStatus === 'ALERT') {
+      setMissionStatus('DRAFT');
+      setTransponderCode(null);
+      setAlertMessage(null);
+    }
+  }, [draftMission.droneId, draftMission.altitude, draftMission.targetCoords, draftMission.bypassP01, draftMission.type]);
+
+  const [timelineEvents, setTimelineEvents] = useState(() => {
+    try {
+      const saved = localStorage.getItem('skymarshal_timeline');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return [
+      { time: "12:14:00 Z", text: "Niezidentyfikowany UAV (Wykrycie radarowe)" },
+      { time: "11:58:00 Z", text: "Zagrożenie Pożarowe (Zgłoszenie COP)" },
+      { time: "11:15:00 Z", text: "Akcja SAR - Zaginiony Kajakarz" }
+    ];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('skymarshal_timeline', JSON.stringify(timelineEvents.slice(0, 50)));
+  }, [timelineEvents]);
+
   const [emData, setEmData] = useState(Array(20).fill(0).map((_, i) => ({ time: i, value: -80 + Math.random() * 20 })));
   const [windSpeed, setWindSpeed] = useState(3.8);
+  const [latency, setLatency] = useState(12);
   const [showReport, setShowReport] = useState(false);
 
-  // Tick clock
   useEffect(() => {
     const timer = setInterval(() => {
-      setSystemTime(new Date().toLocaleTimeString());
+      setSystemTime(new Date().toLocaleTimeString('pl-PL', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Environment Tick (EM + Wind)
   useEffect(() => {
     const timer = setInterval(() => {
       setEmData(prev => {
@@ -192,11 +145,11 @@ export default function App() {
         const diff = (Math.random() - 0.5) * 1.5;
         return Math.max(0, Math.min(25, prev + diff));
       });
+      setLatency(Math.round(8 + Math.random() * 20));
     }, 1500);
     return () => clearInterval(timer);
   }, []);
 
-  // Radar ping
   useEffect(() => {
     if (!soundEnabled) return;
     const pingTimer = setInterval(() => {
@@ -205,160 +158,118 @@ export default function App() {
     return () => clearInterval(pingTimer);
   }, [soundEnabled]);
 
-  // Mock data representing Faza 1
-  const [drones, setDrones] = useState([
-    {
-      id: "drone_pol_01",
-      name: "POLICJA - Sentinel-1",
-      model: "DJI Matrice 350 RTK",
-      department: "Policja",
-      status: "ENGAGED",
-      coordinates: [50.5492, 22.0482],
-      battery: 68,
-      altitude: 95,
-      speed: 12,
-      signal: -62,
-      payload: "Gimbal H20T (Zoom + Thermal)",
-      operator: "st. asp. J. Kowalski",
-      legalClass: "Specific (STS-01)"
-    },
-    {
-      id: "drone_fire_01",
-      name: "PSP - Vulcan-Thermal",
-      model: "DJI Mavic 3 Enterprise T",
-      department: "Straż Pożarna",
-      status: "EN_ROUTE",
-      coordinates: [50.5630, 22.0720],
-      battery: 89,
-      altitude: 115,
-      speed: 16,
-      signal: -55,
-      payload: "Thermal Imaging + Gas Analyzer",
-      operator: "mł. kpt. A. Nowak",
-      legalClass: "Open A2"
-    },
-    {
-      id: "drone_osp_01",
-      name: "OSP - Lifesaver-3",
-      model: "Yuneec H520",
-      department: "OSP Stalowa Wola",
-      status: "STANDBY",
-      coordinates: [50.5668, 22.0583],
-      battery: 100,
-      altitude: 0,
-      speed: 0,
-      signal: -42,
-      payload: "High-intensity Searchlight + Speaker",
-      operator: "druh M. Mazur",
-      legalClass: "Open A3"
-    },
-    {
-      id: "drone_crisis_01",
-      name: "CZP - CargoCarrier-X",
-      model: "Custom Heavy Lift",
-      department: "Zarządzanie Kryzysowe",
-      status: "STANDBY",
-      coordinates: [50.5613, 22.0592],
-      battery: 95,
-      altitude: 0,
-      speed: 0,
-      signal: -38,
-      payload: "Defibrillator AED / Emergency Medkit",
-      operator: "inż. K. Wisłocki",
-      legalClass: "Specific (Authorised)"
-    }
-  ]);
+  const [drones, setDrones] = useState(INITIAL_DRONES);
 
   const selectedDrone = drones.find(d => d.id === selectedDroneId) || null;
 
-  // Telemetry simulation tick
+  const getAiDetection = (drone) => {
+    if (!drone) return "";
+    if (drone.id.includes('pol')) return "🚨 AI: Śledzenie obiektu KSP-Target (92% pewności)";
+    if (drone.id.includes('fire')) return "🔥 AI: Wykryto hotspot pożarowy (95% pewności)";
+    if (drone.id.includes('osp')) return "🔍 AI: Wyszukiwanie sygnatury termicznej ludzi...";
+    if (drone.id.includes('glider')) return "✈️ GA: Lot treningowy / Brak sensorów bojowych";
+    return "📦 AI: Autonomiczny zrzut ładunku gotowy";
+  };
+
   useEffect(() => {
     let tickCount = 0;
     const telemetryTimer = setInterval(() => {
       tickCount++;
       setDrones(prevDrones => prevDrones.map(drone => {
-        // Only update active/airborne drones
-        if (drone.status === 'STANDBY' || drone.status === 'OFFLINE') return drone;
+        if (drone.status === 'STANDBY') {
+          let newBattery = Math.min(100, drone.battery + 0.3);
+          let newAltitude = Math.max(0, drone.altitude - 10);
+          let newSpeed = 0;
+          return { ...drone, battery: Number(newBattery.toFixed(1)), altitude: Number(newAltitude.toFixed(1)), speed: newSpeed, waypoints: null };
+        }
+        if (drone.status === 'OFFLINE') return drone;
 
-        // Random fluctuations
-        const newSpeed = Math.max(0, drone.speed + (Math.random() - 0.5));
-        const newAltitude = Math.max(0, drone.altitude + (Math.random() * 2 - 1));
-        const newSignal = drone.signal + (Math.random() * 4 - 2);
-        
-        // Battery deplete 0.1% every 5 seconds (5 ticks)
-        let newBattery = drone.battery;
-        if (tickCount % 5 === 0) {
-          newBattery = Math.max(0, drone.battery - 0.1);
+        let newBattery = Math.max(0, drone.battery - 0.15);
+        let newSpeed = drone.speed;
+        let newAltitude = drone.altitude;
+        if (drone.status === 'EN_ROUTE') {
+          newSpeed = 15 + (Math.random() - 0.5);
+          const tAlt = drone.targetAltitude || 100;
+          newAltitude = drone.altitude + (tAlt - drone.altitude) * 0.1 + (Math.random() * 2 - 1);
+        } else if (drone.status === 'LINK_LOST') {
+          newSpeed = 10;
+          newAltitude = drone.altitude + (100 - drone.altitude) * 0.1 + (Math.random() * 1 - 0.5);
+        } else if (drone.status === 'ENGAGED') {
+          newSpeed = 0;
+          const tAlt = drone.targetAltitude || drone.altitude;
+          newAltitude = drone.altitude + (tAlt - drone.altitude) * 0.1 + (Math.random() * 0.4 - 0.2);
         }
 
-        // Flight physics for EN_ROUTE
+        let tempSignal = drone.signal + (Math.random() * 4 - 2);
+        const distToEC = getDistanceMeters(drone.coordinates, [50.5841, 22.0523]);
+        if (distToEC < 800) tempSignal -= 30;
+        else if (distToEC < 1200) tempSignal -= 15;
+        else tempSignal += (-50 - tempSignal) * 0.05;
+        let newSignal = Math.max(-95, Math.min(-30, tempSignal));
+        if (drone.status === 'LINK_LOST') {
+          newSignal = Math.round(-95 - Math.random() * 3);
+        }
         let newCoords = drone.coordinates;
         let finalStatus = drone.status;
         let finalTarget = drone.targetCoords;
+        let newWaypoints = drone.waypoints ? [...drone.waypoints] : null;
 
-        if (drone.status === 'EN_ROUTE' && drone.targetCoords) {
-          const dist = getDistanceMeters(drone.coordinates, drone.targetCoords);
-          if (dist < 10) {
-            finalStatus = 'ENGAGED';
-            finalTarget = null;
-          } else {
-            const speedMs = Math.max(10, drone.speed); // minimum speed for visual movement
-            const ratio = speedMs / dist;
-            newCoords = [
-              drone.coordinates[0] + (drone.targetCoords[0] - drone.coordinates[0]) * ratio,
-              drone.coordinates[1] + (drone.targetCoords[1] - drone.coordinates[1]) * ratio
-            ];
+        if (drone.status === 'EN_ROUTE' || drone.status === 'LINK_LOST') {
+          const currentTarget = (newWaypoints && newWaypoints.length > 0) ? newWaypoints[0] : finalTarget;
+          if (currentTarget) {
+            const dist = getDistanceMeters(drone.coordinates, currentTarget);
+            if (dist < 15) {
+              if (newWaypoints && newWaypoints.length > 0) {
+                newWaypoints.shift();
+                if (newWaypoints.length === 0) newWaypoints = null;
+              } else {
+                const isRTH = drone.baseCoords && finalTarget[0] === drone.baseCoords[0] && finalTarget[1] === drone.baseCoords[1];
+                if (isRTH) finalStatus = 'STANDBY';
+                else finalStatus = 'ENGAGED';
+                finalTarget = null;
+              }
+            } else {
+              const speedMs = drone.status === 'LINK_LOST' ? 10 : (drone.maxSpeed || 15);
+              const ratio = speedMs / dist;
+              newCoords = [
+                drone.coordinates[0] + (currentTarget[0] - drone.coordinates[0]) * ratio,
+                drone.coordinates[1] + (currentTarget[1] - drone.coordinates[1]) * ratio
+              ];
+            }
+          }
+        }
+        if (newBattery < 20 && finalStatus !== 'STANDBY' && drone.id !== 'glider_epst_01') {
+          const isAlreadyRTH = finalTarget && drone.baseCoords && 
+            finalTarget[0] === drone.baseCoords[0] && finalTarget[1] === drone.baseCoords[1];
+          if (!isAlreadyRTH) {
+            finalStatus = 'EN_ROUTE';
+            finalTarget = drone.baseCoords;
+            newWaypoints = null;
           }
         }
 
-        return {
-          ...drone,
-          coordinates: newCoords,
-          status: finalStatus,
-          targetCoords: finalTarget,
-          speed: Number(newSpeed.toFixed(1)),
-          altitude: Number(newAltitude.toFixed(1)),
-          signal: Math.round(newSignal),
-          battery: Number(newBattery.toFixed(1))
-        };
+        // Loop glider traffic dynamically (fixes Point 3 in the Audit)
+        if (drone.id === 'glider_epst_01') {
+          newBattery = 100;
+          if (finalStatus === 'STANDBY' || drone.status === 'STANDBY') {
+            finalStatus = 'EN_ROUTE';
+            finalTarget = drone.baseCoords;
+            newWaypoints = [
+              [50.6050 + (Math.random() - 0.5) * 0.015, 22.0400 + (Math.random() - 0.5) * 0.015],
+              [50.5900 + (Math.random() - 0.5) * 0.015, 22.0100 + (Math.random() - 0.5) * 0.015]
+            ];
+          }
+          newSpeed = 22 + (Math.random() * 4 - 2);
+          newAltitude = drone.altitude + (350 - drone.altitude) * 0.05 + (Math.random() * 2 - 1);
+        }
+
+        return { ...drone, coordinates: newCoords, status: finalStatus, targetCoords: finalTarget, waypoints: newWaypoints, speed: Number(newSpeed.toFixed(1)), altitude: Number(newAltitude.toFixed(1)), signal: Math.round(newSignal), battery: Number(newBattery.toFixed(1)) };
       }));
     }, 1000);
-
     return () => clearInterval(telemetryTimer);
   }, []);
 
-  const [incidents, setIncidents] = useState([
-    {
-      id: "inc_01",
-      status: "ACTIVE",
-      priority: "CRITICAL",
-      title: "Niezidentyfikowany UAV",
-      location: "Zakłady HSW (P-01)",
-      coords: [50.5510, 22.0460],
-      droneId: "drone_pol_01",
-      time: "12:14"
-    },
-    {
-      id: "inc_02",
-      status: "ACTIVE",
-      priority: "HIGH",
-      title: "Zagrożenie Pożarowe",
-      location: "Strefa Przemysłowa",
-      coords: [50.5592, 22.0911],
-      droneId: "drone_fire_01",
-      time: "11:58"
-    },
-    {
-      id: "inc_03",
-      status: "ACTIVE",
-      priority: "MEDIUM",
-      title: "Akcja SAR - Zaginiony",
-      location: "Rzeka San",
-      coords: [50.5822, 22.0298],
-      droneId: "drone_osp_01",
-      time: "11:15"
-    }
-  ]);
+  const [incidents, setIncidents] = useState(INITIAL_INCIDENTS);
 
   const checkAirspace = () => {
     setMissionStatus('VERIFYING');
@@ -375,35 +286,64 @@ export default function App() {
       }
       
       let msg = "";
-      if (draftMission.altitude > 120 && draftMission.type !== 'Military') {
-        setAlertMessage("BŁĄD: Przekroczono 120m AGL (Limit Open). Zmień typ na Military lub obniż pułap.");
+      const drone = drones.find(d => d.id === draftMission.droneId);
+      const droneCoords = drone.coordinates;
+      
+      if (windSpeed > 10 && drone.legalClass.includes('Otwarta')) {
+        setAlertMessage("BŁĄD: Silny wiatr (>10m/s). Loty klasy Otwarta wstrzymane. Wymagany dron klasy STS.");
         setMissionStatus('DRAFT');
         if (soundEnabled) playSound('alert');
         return;
       }
 
-      const drone = drones.find(d => d.id === draftMission.droneId);
-      const droneCoords = drone.coordinates;
-
-      // 1. Weryfikacja Trajektorii (Odcinek lotu)
-      const distToHSWSegment = getDistanceToSegment([50.5510, 22.0460], droneCoords, draftMission.targetCoords);
-      if (distToHSWSegment <= 1500 && !draftMission.bypassP01) {
-        setMissionStatus('ALERT');
-        setAlertMessage(msg + "CRITICAL: Trajektoria lotu przecina strefę P-01 (HSW). Lot zabroniony bez autoryzacji MON!");
+      if (draftMission.altitude > 120 && draftMission.type !== 'Wojskowa / Specjalna') {
+        setAlertMessage("BŁĄD: Przekroczono 120m AGL (Limit kategorii Open). Zmień typ misji na Wojskową/Specjalną lub obniż pułap.");
+        setMissionStatus('DRAFT');
         if (soundEnabled) playSound('alert');
         return;
       }
 
-      // 2. Weryfikacja Dekonfliktacji (Zbyt blisko innego aktywnego drona)
-      let conflict = null;
-      drones.forEach(d => {
-        if (d.id !== draftMission.droneId && d.targetCoords) {
-          const distToOtherTarget = getDistanceMeters(draftMission.targetCoords, d.targetCoords);
-          if (distToOtherTarget < 200) {
-            conflict = d;
-          }
+      const hswCenter = [50.5510, 22.0460];
+      const hswRadius = 1500;
+      const distToCenter = getDistanceMeters(draftMission.targetCoords, hswCenter);
+      const distStartToCenter = getDistanceMeters(droneCoords, hswCenter);
+
+      if ((distToCenter < hswRadius || distStartToCenter < hswRadius) && !draftMission.bypassP01) {
+        setAlertMessage("BŁĄD: Cel lub dron wewnątrz strefy zakazanej P-01 (HSW). Wymagana autoryzacja MON.");
+        setMissionStatus('ALERT');
+        if (soundEnabled) playSound('alert');
+        return;
+      }
+
+      const routeResult = calculateRoute(droneCoords, draftMission.targetCoords, draftMission.bypassP01);
+      if (routeResult.intersects && !draftMission.bypassP01) {
+        msg = "ℹ️ Trajektoria przecina strefę P-01 (HSW) lub jej bufor. System UTM wyznaczył bezpieczną trasę obejściową.";
+      } else if (draftMission.bypassP01) {
+        msg = "✅ Autoryzacja MON aktywna. Lot bezpośredni przez strefę P-01 zatwierdzony.";
+      }
+
+      const ecRadius = 800;
+      const ecSafetyBuffer = 200;
+      const distToECSegment = getDistanceToSegment([50.5841, 22.0523], droneCoords, draftMission.targetCoords);
+      if (distToECSegment <= ecRadius + ecSafetyBuffer) {
+        if (distToECSegment <= ecRadius) {
+          msg += (msg ? " " : "") + "⚠️ OSTRZEŻENIE: Trasa narusza strefę R-05 (Elektrociepłownia). Spodziewany wysoki szum EM.";
+        } else {
+          msg += (msg ? " " : "") + "⚠️ OSTRZEŻENIE: Trasa przebiega w strefie buforowej R-05. Spodziewany wysoki szum EM.";
         }
-      });
+      }
+
+      let conflict = null;
+      if (!draftMission.bypassP01) {
+        drones.forEach(d => {
+          if (d.id !== draftMission.droneId && d.targetCoords) {
+            const distToOtherTarget = getDistanceMeters(draftMission.targetCoords, d.targetCoords);
+            if (distToOtherTarget < 200) {
+              conflict = d;
+            }
+          }
+        });
+      }
       if (conflict) {
         setMissionStatus('ALERT');
         setAlertMessage(`BŁĄD: Dekonfliktacja! Cel zbyt blisko operacji drona ${conflict.name}.`);
@@ -414,22 +354,24 @@ export default function App() {
       setAlertMessage(msg || null);
       setTransponderCode(`XPNDR-${Math.floor(1000 + Math.random() * 9000)}`);
       setMissionStatus('APPROVED');
-    }, 2000);
+    }, 1500);
   };
 
   const dispatchMission = () => {
     if (missionStatus !== 'APPROVED') return;
-    
     setDrones(prev => prev.map(d => {
       if (d.id === draftMission.droneId) {
-        return { 
-          ...d, 
-          status: 'EN_ROUTE', 
-          targetCoords: draftMission.targetCoords 
-        };
+        const routeResult = calculateRoute(d.coordinates, draftMission.targetCoords, draftMission.bypassP01);
+        return { ...d, status: 'EN_ROUTE', targetCoords: draftMission.targetCoords, waypoints: routeResult.waypoints, targetAltitude: draftMission.altitude };
       }
       return d;
     }));
+    
+    const droneName = drones.find(d => d.id === draftMission.droneId)?.name || draftMission.droneId;
+    setTimelineEvents(prev => [
+      { time: new Date().toLocaleTimeString('pl-PL', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " Z", text: `Zadysponowano drona ${droneName} (Misja: ${draftMission.type})` },
+      ...prev
+    ]);
 
     setMissionStatus('DISPATCHED');
     if (soundEnabled) playSound('success');
@@ -442,577 +384,532 @@ export default function App() {
     }, 1500);
   };
 
+
+
+  const simulateLinkLost = (droneId) => {
+    const drone = drones.find(d => d.id === droneId);
+    if (!drone || drone.status === 'STANDBY' || drone.status === 'OFFLINE' || drone.status === 'LINK_LOST') return;
+    
+    if (soundEnabled) playSound('alert');
+    setDrones(prev => prev.map(d => {
+      if (d.id === droneId) {
+        return {
+          ...d,
+          status: 'LINK_LOST',
+          targetCoords: d.baseCoords,
+          waypoints: null,
+          targetAltitude: 100,
+          signal: -95
+        };
+      }
+      return d;
+    }));
+
+    setTimelineEvents(prev => [
+      { time: new Date().toLocaleTimeString('pl-PL', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " Z", text: `⚠️ ALARM C2: Utrata sygnału z ${drone.name}! Wymuszenie procedury RTH.` },
+      ...prev
+    ]);
+  };
+
+  const exportOperationalReport = () => {
+    let text = `==================================================\n`;
+    text += `       RAPORT OPERACYJNY SKYMARSHAL C2\n`;
+    text += `       Generowano: ${new Date().toLocaleString('pl-PL')} UTC\n`;
+    text += `==================================================\n\n`;
+    text += `STATUS SYSTEMU: NOMINALNY\n`;
+    text += `FLOTA UAV: 4 JEDNOSTKI ZINTEGROWANE\n`;
+    text += `DEKONFLIKTACJA UTM: AKTYWNA\n\n`;
+    text += `--- DZIENNIK ZDARZEŃ ---\n`;
+    
+    timelineEvents.forEach(ev => {
+      text += `[${ev.time}] ${ev.text}\n`;
+    });
+    
+    text += `\n==================================================\n`;
+    text += `Raport wyeksportowany automatycznie w formacie zgodnym z SWD-ST.\n`;
+    text += `SkyMarshal C2 TAC-NET, Spaceshield Hack 2026.\n`;
+
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `skymarshal_raport_${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    if (soundEnabled) playSound('success');
+  };
+
+  const [selectedScenario, setSelectedScenario] = useState('dualuse_hsw');
+
+  const triggerCrisisScenario = () => {
+    const scenario = CRISIS_SCENARIOS[selectedScenario];
+    const crisisCoords = scenario.coords;
+    const newIncident = {
+      id: `inc_crisis_${Date.now()}`,
+      status: "ACTIVE",
+      priority: scenario.priority,
+      title: scenario.title,
+      location: scenario.location,
+      coords: crisisCoords,
+      droneIds: scenario.droneIds,
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      isDualUse: scenario.isDualUse,
+      phases: scenario.phases,
+      procedures: scenario.procedures
+    };
+    setIncidents(prev => [newIncident, ...prev]);
+    setDrones(prev => prev.map(d => {
+      if (scenario.droneIds.includes(d.id)) {
+        const routeResult = calculateRoute(d.coordinates, crisisCoords, scenario.bypassP01);
+        const targetAltitude = scenario.droneAltitudes[d.id] || 100;
+        return { ...d, status: 'EN_ROUTE', targetCoords: crisisCoords, waypoints: routeResult.waypoints, targetAltitude };
+      }
+      return d;
+    }));
+
+    setTimelineEvents(prev => [
+      { time: new Date().toLocaleTimeString('pl-PL', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', second: '2-digit' }) + " Z", text: `Wdrożono: ${scenario.title}` },
+      ...prev
+    ]);
+
+    if (soundEnabled) playSound('alert');
+    setMapFocusCoords(crisisCoords);
+    setActiveTab('map');
+  };
+
+  const handleAutoAssign = (incident, e) => {
+    e.stopPropagation();
+    const title = incident.title.toLowerCase();
+    let requiredCaps = [];
+    if (title.includes('pożar') || title.includes('fire') || title.includes('termowiz')) {
+      requiredCaps = ['thermal', 'fire_recon'];
+    } else if (title.includes('sar') || title.includes('zaginion') || title.includes('poszukiw')) {
+      requiredCaps = ['search', 'rescue'];
+    } else if (title.includes('uav') || title.includes('kryzys') || title.includes('dual-use')) {
+      requiredCaps = ['surveillance', 'tracking'];
+    }
+
+    const scoreDrone = (drone) => {
+      let score = 0;
+      const dist = getDistanceMeters(drone.coordinates, incident.coords);
+      if (requiredCaps.length > 0 && drone.capabilities) {
+        const matchCount = requiredCaps.filter(c => drone.capabilities.includes(c)).length;
+        score += matchCount * 10000;
+      }
+      if (drone.status === 'STANDBY') score += 5000;
+      score -= dist / 10;
+      return score;
+    };
+
+    let bestDrone = null;
+    let bestScore = -Infinity;
+    
+    drones.forEach(drone => {
+      const score = scoreDrone(drone);
+      if (score > bestScore) {
+        bestScore = score;
+        bestDrone = drone;
+      }
+    });
+
+    if (bestDrone) {
+      setDraftMission({
+        droneId: bestDrone.id,
+        type: incident.priority === 'CRITICAL' ? 'Wojskowa / Specjalna' : 'Poszukiwanie i Ratownictwo',
+        altitude: 100,
+        targetCoords: incident.coords,
+        bypassP01: false
+      });
+      setActiveTab('planner');
+      setMapFocusCoords(incident.coords);
+      if (soundEnabled) playSound('ping');
+    }
+  };
+
+  const handleResolve = (incident, e) => {
+    e.stopPropagation();
+    setIncidents(prev => prev.map(inc => inc.id === incident.id ? { ...inc, status: 'RESOLVED' } : inc));
+    setDrones(prev => prev.map(drone => {
+      const isAssigned = incident.droneIds ? incident.droneIds.includes(drone.id) : drone.id === incident.droneId;
+      if (isAssigned) {
+        const homeRoute = calculateRoute(drone.coordinates, drone.baseCoords, false);
+        return { ...drone, status: 'EN_ROUTE', targetCoords: drone.baseCoords, waypoints: homeRoute.waypoints };
+      }
+      return drone;
+    }));
+    if (soundEnabled) playSound('success');
+  };
+
+  if (!isAuthenticated) {
+    return <BootSequence onAuthSuccess={(role) => { setIsAuthenticated(true); setUserRole(role); }} />;
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-tactical-bg text-slate-100 font-mono relative">
+    <div className="h-screen flex flex-col bg-[#020203] text-on-surface font-body overflow-hidden">
+      
       {/* REPORT MODAL */}
       {showReport && (
-        <div className="absolute inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-tactical-cyan/50 rounded-lg max-w-2xl w-full p-6 shadow-[0_0_30px_rgba(0,240,255,0.1)]">
-            <div className="flex justify-between items-center mb-6 border-b border-tactical-border pb-4">
-              <h2 className="text-xl font-bold text-tactical-cyan flex items-center gap-2">
-                <Shield className="h-6 w-6" /> RAPORT OPERACYJNY & ŹRÓDŁA DANYCH
+        <div className="absolute inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface border border-outline/50 rounded-xl max-w-2xl w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6 border-b border-white/10 pb-4">
+              <h2 className="text-xl font-bold text-primary flex items-center gap-2">
+                <span className="material-symbols-outlined">shield</span> RAPORT OPERACYJNY & ŹRÓDŁA DANYCH
               </h2>
-              <button onClick={() => setShowReport(false)} className="text-slate-400 hover:text-white font-bold">X</button>
+              <button onClick={() => setShowReport(false)} className="text-on-surface-variant hover:text-white font-bold">X</button>
             </div>
             
-            <div className="space-y-4 text-sm text-slate-300">
-              <p>Oto oficjalne zestawienie źródeł wykorzystanych do budowy przestrzeni operacyjnej <strong>SKYMARSHAL C2 TAC-NET</strong> (Wymóg Formalny #3):</p>
+            <div className="space-y-4 text-sm text-on-surface-variant">
+              <p>Oto oficjalne zestawienie źródeł wykorzystanych do budowy przestrzeni operacyjnej <strong>SKYMARSHAL C2 TAC-NET</strong>:</p>
               
               <ul className="list-disc pl-5 space-y-2">
-                <li><strong>Topologia i granice miasta:</strong> OpenStreetMap Contributors (CC-BY-SA), CartoDB Dark Matter.</li>
+                <li><strong>Polska Agencja Żeglugi Powietrznej (PAŻP) - AIP Polska:</strong> <a href="https://ais.pansa.pl" target="_blank" rel="noreferrer" className="text-primary underline">ais.pansa.pl</a></li>
+                <li><strong>PAŻP DroneTower:</strong> <a href="https://dronetower.pansa.pl" target="_blank" rel="noreferrer" className="text-primary underline">dronetower.pansa.pl</a></li>
+                <li><strong>Przepisy lotnicze dla dronów (EASA kat. Open 120m i Specific STS):</strong> 
+                  <ul className="list-circle pl-5 text-on-surface-variant mt-1 text-xs">
+                    <li>EASA: <a href="https://easa.europa.eu" target="_blank" rel="noreferrer" className="text-primary underline">easa.europa.eu</a></li>
+                    <li>ULC: <a href="https://drony.ulc.gov.pl" target="_blank" rel="noreferrer" className="text-primary underline">drony.ulc.gov.pl</a></li>
+                  </ul>
+                </li>
+                <li><strong>Topologia i granice miasta:</strong> <a href="https://www.openstreetmap.org" target="_blank" rel="noreferrer" className="text-primary underline">OpenStreetMap</a> Contributors (CC-BY-SA), CartoDB Dark Matter.</li>
                 <li><strong>Współrzędne Kluczowej Infrastruktury (Stalowa Wola):</strong>
-                  <ul className="list-circle pl-5 text-slate-400 mt-1 text-xs">
-                    <li>Huta Stalowa Wola (HSW): [50.5510, 22.0460] - <a href="https://hsw.pl" target="_blank" rel="noreferrer" className="text-tactical-cyan underline">hsw.pl</a></li>
-                    <li>Elektrociepłownia: [50.5841, 22.0523]</li>
+                  <ul className="list-circle pl-5 text-on-surface-variant mt-1 text-xs">
+                    <li>Huta Stalowa Wola (HSW): [50.5510, 22.0460] - <a href="https://hsw.pl" target="_blank" rel="noreferrer" className="text-primary underline">hsw.pl</a></li>
+                    <li>Elektrociepłownia (ECSW): [50.5841, 22.0523] - <a href="https://www.ec-sw.pl" target="_blank" rel="noreferrer" className="text-primary underline">ec-sw.pl</a></li>
                     <li>Liceum KEN (C2 Main): [50.5668, 22.0583]</li>
                   </ul>
                 </li>
-                <li><strong>Regulacje Lotnicze i Limity Prawne (120m Open Limit):</strong> Polska Agencja Żeglugi Powietrznej (PANSA) & wytyczne EASA - <a href="https://pansa.pl" target="_blank" rel="noreferrer" className="text-tactical-cyan underline">PANSA UTM</a>.</li>
                 <li><strong>Wzorce taktyczne:</strong> Procedury operacyjne PSP dla misji rozpoznawczych (STS).</li>
               </ul>
 
-              <div className="mt-6 p-4 bg-slate-950 rounded border border-tactical-border">
-                <p className="text-tactical-green font-bold text-xs mb-1">STATUS SYSTEMU:</p>
-                <p className="text-xs">Zasoby zintegrowane poprawnie. Procedury Dual-Use spełnione pomyślnie. Wymogi Spaceshield Hack 2026: ZAAKCEPTOWANO.</p>
+              <div className="mt-6 p-4 bg-white/5 rounded border border-white/10">
+                <p className="text-green-400 font-bold text-xs mb-1">STATUS SYSTEMU:</p>
+                <p className="text-[9px] text-slate-500">{new Date().toLocaleDateString('pl-PL', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase()}</p>
+                <p className="text-xs text-white">Zasoby zintegrowane poprawnie. Procedury Dual-Use spełnione pomyślnie. Wymogi Spaceshield Hack 2026: ZAAKCEPTOWANO.</p>
               </div>
             </div>
             
-            <div className="mt-6 flex justify-end">
-              <button onClick={() => setShowReport(false)} className="px-6 py-2 bg-tactical-cyan text-slate-900 font-bold rounded hover:bg-tactical-cyan/90 transition shadow-[0_0_15px_rgba(0,240,255,0.4)]">
-                ZAMKNIJ RAPORT
+            <div className="mt-6 flex justify-between items-center border-t border-white/10 pt-4">
+              <button onClick={exportOperationalReport} className="px-4 py-2 bg-green-600 hover:bg-green-750 text-white font-bold text-xs rounded transition flex items-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(22,163,74,0.3)]">
+                <span className="material-symbols-outlined text-[16px]">download</span> POBIERZ RAPORT SWD-ST (.TXT)
+              </button>
+              <button onClick={() => setShowReport(false)} className="px-6 py-2 bg-primary text-white font-bold rounded hover:bg-primary/90 transition shadow-[0_0_15px_rgba(99,102,241,0.4)] cursor-pointer">
+                ZAMKNIJ
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
-      <header className="flex items-center justify-between px-6 py-4 border-b border-tactical-border bg-slate-950/80 backdrop-blur-md z-10">
-        <div className="flex items-center space-x-3">
-          <div className="relative">
-            <Shield className="h-8 w-8 text-tactical-cyan animate-pulse" />
-            <div className="absolute top-0 right-0 h-2.5 w-2.5 bg-tactical-cyan rounded-full animate-ping" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-wider text-tactical-cyan flex items-center gap-2">
-              SKYMARSHAL <span className="text-xs px-2 py-0.5 rounded bg-tactical-cyan/10 text-tactical-cyan font-normal tracking-normal border border-tactical-cyan/20">C2 TAC-NET</span>
-            </h1>
-            <p className="text-[10px] text-slate-500 tracking-tight">STALOWA WOLA MUNICIPAL DRONE COORDINATION</p>
+      {/* TOP NAVIGATION */}
+      <header className="glass-panel w-full z-50 flex justify-between items-center px-8 h-16 border-b border-white/5 shrink-0">
+        <div className="flex items-center gap-6">
+          <h1 className="font-bold text-xl tracking-tight flex items-center gap-2">
+            <span className="text-white">SKY</span><span className="text-primary font-extrabold">MARSHAL</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary ml-1 shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
+            <span className="text-[9px] px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-normal tracking-normal border border-amber-500/30 animate-pulse ml-1">🧪 SYMULACJA</span>
+          </h1>
+          <div className="h-4 w-px bg-white/10"></div>
+          <div className="flex items-center gap-6 text-[13px] font-medium text-on-surface-variant">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px] text-green-500" style={{fontVariationSettings: "'FILL' 1"}}>check_circle</span>
+              <span>NOMINALNY <span className="opacity-40 ml-1">{latency}ms</span></span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">schedule</span>
+              <span className="font-mono">{systemTime} UTC</span>
+            </div>
           </div>
         </div>
-
-        <div className="flex items-center space-x-8 text-xs">
-          <div className="hidden md:flex items-center space-x-2 bg-slate-900/50 border border-tactical-border px-3 py-1.5 rounded">
-            <Radio className="h-4 w-4 text-tactical-cyan animate-pulse" />
-            <span className="text-slate-400">STATUS:</span>
-            <span className="text-tactical-green font-bold">NOMINAL</span>
-            <span className="text-slate-600">|</span>
-            <span className="text-slate-400">LATENCY:</span>
-            <span className="text-tactical-cyan">12ms</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 px-4 py-1.5 rounded-full border border-white/5 bg-white/[0.02] text-[11px] font-bold uppercase tracking-wider">
+            <span className="text-on-surface-variant">Flota <span className="text-primary ml-1">{drones.filter(d => d.status !== 'OFFLINE').length}/4</span></span>
+            <span className="text-on-surface-variant">Alerty <span className="text-error ml-1">{incidents.filter(i => i.status === 'ACTIVE').length}</span></span>
           </div>
-
-          <div className="flex items-center space-x-2 bg-slate-900/50 border border-tactical-border px-3 py-1.5 rounded">
-            <Activity className="h-4 w-4 text-tactical-cyan" />
-            <span className="text-slate-400">DRONES ONLINE:</span>
-            <span className="text-tactical-cyan font-bold">{drones.filter(d => d.status !== 'OFFLINE').length}/4</span>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setShowReport(true)}
-              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-tactical-cyan/10 text-tactical-cyan border border-tactical-cyan/30 rounded hover:bg-tactical-cyan hover:text-slate-900 transition font-bold"
-            >
-              RAPORT OPERACYJNY
+          <div className="flex gap-1">
+            <button onClick={() => setShowOrtoLayer(!showOrtoLayer)} className={`ghost-button px-4 py-1 rounded-full text-xs font-bold ${showOrtoLayer ? 'bg-primary/20 text-primary border-primary/50' : ''}`}>
+              🗺️ {showOrtoLayer ? 'TRYB: GUGiK ORTO' : 'TRYB: TAKTYCZNY'}
             </button>
-            <button 
-              onClick={() => setSoundEnabled(!soundEnabled)} 
-              className="p-1.5 rounded border border-tactical-border hover:bg-slate-900 text-slate-400 hover:text-tactical-cyan transition"
-            >
-              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            <button onClick={() => setShowReport(true)} className="ghost-button px-4 py-1 rounded-full text-xs font-bold">
+              RAPORT
             </button>
-            <div className="text-right">
-              <p className="text-tactical-cyan font-bold tracking-widest">{systemTime}</p>
-              <p className="text-[9px] text-slate-500">23 MAY 2026</p>
+            <button onClick={() => setSoundEnabled(!soundEnabled)} className="ghost-button p-2 rounded-full border-0">
+              <span className="material-symbols-outlined text-[20px]">{soundEnabled ? 'volume_up' : 'volume_off'}</span>
+            </button>
+            <div className="flex flex-col items-end text-right mr-1">
+              <span className="text-[10px] font-bold text-white uppercase tracking-wider">{userRole === 'MON' ? 'MON / SZTAB' : userRole === 'PSP' ? 'DYSPOZYTOR PSP' : 'DYSPOZYTOR KSP'}</span>
+              <span className="text-[8px] text-primary/80 uppercase tracking-widest font-mono">TAC-NET LINK</span>
             </div>
+            <button onClick={() => { setIsAuthenticated(false); setUserRole(null); }} title="Wyloguj" className="w-8 h-8 rounded-full bg-white/5 hover:bg-error/20 hover:text-error hover:border-error/30 flex items-center justify-center ml-2 border border-white/10 overflow-hidden transition-all cursor-pointer">
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+            </button>
           </div>
         </div>
       </header>
 
-      {/* DASHBOARD BODY */}
-      <main className="flex flex-1 overflow-hidden p-4 gap-4">
+      <main className="flex-1 flex gap-4 w-full p-4 min-h-0 overflow-hidden">
         
-        {/* LEFT COLUMN: FLEET OPERATIONS */}
-        <section className="w-1/4 min-w-[280px] flex flex-col bg-slate-950/40 border border-tactical-border rounded-lg p-3 backdrop-blur-sm">
-          <div className="flex items-center justify-between border-b border-tactical-border pb-2 mb-3">
-            <h2 className="text-xs font-bold text-slate-400 flex items-center gap-2">
-              <Cpu className="h-4 w-4 text-tactical-cyan" /> FLOTA DRONÓW MIEJSKICH
-            </h2>
-            <span className="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">ACTIVE</span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-            {drones.map(drone => (
-              <div 
-                key={drone.id}
-                onClick={() => setSelectedDroneId(selectedDrone?.id === drone.id ? null : drone.id)}
-                className={`p-3 rounded border transition cursor-pointer relative group ${
-                  selectedDrone?.id === drone.id 
-                    ? 'bg-slate-900/80 border-tactical-cyan shadow-[0_0_15px_rgba(0,240,255,0.15)]' 
-                    : 'bg-slate-950/60 border-tactical-border hover:border-slate-700 hover:bg-slate-900/30'
-                }`}
-              >
-                {/* Department tag top right */}
-                <span className="absolute top-2 right-2 text-[8px] px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-tactical-border">
-                  {drone.department}
-                </span>
-
-                <h3 className="text-xs font-bold text-slate-100 pr-16">{drone.name}</h3>
-                <p className="text-[10px] text-slate-500 mt-0.5">{drone.model}</p>
-
-                {/* Telemetry bar rows */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 mt-3 text-[10px]">
-                  <div className="flex items-center justify-between bg-slate-900/30 px-1.5 py-0.5 rounded">
-                    <span className="text-slate-500">BATTERY</span>
-                    <span className={`font-bold flex items-center gap-1 ${
-                      drone.battery > 50 ? 'text-tactical-green' : drone.battery > 20 ? 'text-tactical-orange' : 'text-tactical-red animate-pulse'
-                    }`}>
-                      <Battery className="h-3 w-3 inline" /> {drone.battery}%
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between bg-slate-900/30 px-1.5 py-0.5 rounded">
-                    <span className="text-slate-500">STATUS</span>
-                    <span className={`font-bold ${
-                      drone.status === 'STANDBY' ? 'text-tactical-cyan' : 'text-tactical-orange animate-pulse'
-                    }`}>{drone.status}</span>
-                  </div>
-
-                  <div className="flex items-center justify-between bg-slate-900/30 px-1.5 py-0.5 rounded col-span-2">
-                    <span className="text-slate-500">OPERATOR</span>
-                    <span className="text-slate-300 truncate max-w-[120px]">{drone.operator}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* MIDDLE COLUMN: TACTICAL MAP CONTAINER (RADAR ANIMATION IN FAZA 1) */}
-        <section className="flex-1 flex flex-col bg-slate-950/40 border border-tactical-border rounded-lg p-3 backdrop-blur-sm overflow-hidden">
-          {/* Tab buttons */}
-          <div className="flex items-center justify-between border-b border-tactical-border pb-2 mb-3">
-            <div className="flex space-x-1">
-              <button 
-                onClick={() => setActiveTab('map')}
-                className={`text-xs px-3 py-1.5 rounded transition ${
-                  activeTab === 'map' 
-                    ? 'bg-tactical-cyan/15 text-tactical-cyan font-bold border border-tactical-cyan/30' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-                }`}
-              >
-                🗺️ TAKTYCZNY PODGLĄD MAPY
-              </button>
-              <button 
-                onClick={() => setActiveTab('planner')}
-                className={`text-xs px-3 py-1.5 rounded transition ${
-                  activeTab === 'planner' 
-                    ? 'bg-tactical-cyan/15 text-tactical-cyan font-bold border border-tactical-cyan/30' 
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
-                }`}
-              >
-                🧭 KREATOR PLANOWANIA MISJI
-              </button>
-            </div>
-            <span className="text-[10px] text-slate-500 flex items-center gap-1.5">
-              <Compass className="h-3.5 w-3.5 text-tactical-cyan animate-spin" /> UTM REGION: PL-STW-01
-            </span>
-          </div>
-
-          {/* MAIN CONTAINER CONTENT */}
-          <div className="flex-1 bg-slate-950 border border-tactical-border rounded-md overflow-hidden relative flex items-center justify-center">
-            
-            {/* MAP ALWAYS VISIBLE UNDERNEATH */}
-            <div className="absolute inset-0 z-0 bg-slate-950">
-              <MapContainer 
-                center={[50.5652, 22.0642]} 
-                zoom={13} 
-                style={{ height: '100%', width: '100%' }} 
-                zoomControl={false}
-                attributionControl={false}
-              >
-                <MapController centerCoords={mapFocusCoords} />
-                <MapClickHandler activeTab={activeTab} onMapClick={(coords) => setDraftMission(prev => ({...prev, targetCoords: coords}))} />
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                />
-                
-                {/* HSW - P-01 Zone */}
-                <Circle 
-                  center={[50.5510, 22.0460]} 
-                  radius={1500} 
-                  pathOptions={{ color: '#FF2E93', fillColor: '#FF2E93', fillOpacity: 0.15, weight: 1 }}
-                  eventHandlers={{
-                    click: (e) => {
-                      if (activeTab === 'planner') {
-                        setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
-                      }
-                    }
-                  }}
+        {/* LEFT PANEL: FLEET OPS + DIAGNOSTICS */}
+        <section className="w-[340px] flex flex-col gap-4 shrink-0">
+          {/* FLEET OPS */}
+          <div className="flex-1 glass-panel rounded-xl flex flex-col overflow-hidden border border-white/5">
+            <header className="p-6 pb-4 flex justify-between items-center border-b border-white/5">
+              <h2 className="font-bold text-sm text-on-surface-variant uppercase tracking-widest">Operacje Floty</h2>
+              <span className="material-symbols-outlined text-secondary text-[18px]">dns</span>
+            </header>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {drones.map(drone => (
+                <div 
+                  key={drone.id}
+                  onClick={() => setSelectedDroneId(selectedDrone?.id === drone.id ? null : drone.id)}
+                  className={`glass-card rounded-lg p-5 group cursor-pointer relative overflow-hidden transition-all ${selectedDrone?.id === drone.id ? 'bg-primary/5 border-primary/30' : ''}`}
                 >
-                  <Popup>
-                    <div className="text-xs">
-                      <strong className="text-tactical-red">STREFA ZAKAZANA P-01 (HSW)</strong>
-                      <p className="mt-1 text-slate-300">Zakłady Zbrojeniowe. Loty bezwzględnie zakazane bez autoryzacji MON.</p>
-                    </div>
-                  </Popup>
-                </Circle>
-
-                {/* Power Plant - R-05 Zone */}
-                <Circle 
-                  center={[50.5841, 22.0523]} 
-                  radius={800} 
-                  pathOptions={{ color: '#FFB800', fillColor: '#FFB800', fillOpacity: 0.15, weight: 1 }}
-                  eventHandlers={{
-                    click: (e) => {
-                      if (activeTab === 'planner') {
-                        setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
-                      }
-                    }
-                  }}
-                >
-                  <Popup>
-                    <div className="text-xs">
-                      <strong className="text-tactical-orange">STREFA OGRANICZONA R-05</strong>
-                      <p className="mt-1 text-slate-300">Elektrociepłownia. Zagrożenie wysokiego napięcia. Potencjalny jammer GPS.</p>
-                    </div>
-                  </Popup>
-                </Circle>
-
-                {/* Command Center */}
-                <Marker position={[50.5668, 22.0583]} icon={commandCenterIcon}>
-                  <Popup>
-                    <div className="text-xs text-center">
-                      <strong className="text-tactical-cyan">SKYMARSHAL C2 MAIN</strong>
-                      <p className="mt-1 text-slate-300">Liceum KEN</p>
-                    </div>
-                  </Popup>
-                </Marker>
-                
-                {/* Water Station */}
-                <Marker position={[50.5721, 22.0315]} icon={waterStationIcon}>
-                  <Popup>
-                    <div className="text-xs text-center">
-                      <strong className="text-tactical-green">UJĘCIE WODY</strong>
-                      <p className="mt-1 text-slate-300">Infrastruktura zabezpieczona</p>
-                    </div>
-                  </Popup>
-                </Marker>
-
-                {/* Drones */}
-                {drones.map(drone => (
-                  drone.coordinates && (
-                    <Marker 
-                      key={drone.id} 
-                      position={drone.coordinates} 
-                      icon={getDroneIcon(drone.department)}
-                      eventHandlers={{
-                        click: () => setSelectedDroneId(drone.id),
-                      }}
-                    >
-                      <Popup>
-                        <div className="text-xs text-center">
-                          <strong className="text-slate-100">{drone.name}</strong>
-                          <p className="mt-1 text-slate-400 font-bold">{drone.status}</p>
-                        </div>
-                      </Popup>
-                    </Marker>
-                  )
-                ))}
-
-                {/* Draft Mission Target and Path */}
-                {activeTab === 'planner' && draftMission.targetCoords && (
-                  <>
-                    <Marker position={draftMission.targetCoords} opacity={0.7}>
-                      <Popup>Cel Misji</Popup>
-                    </Marker>
-                    {draftMission.droneId && drones.find(d => d.id === draftMission.droneId)?.coordinates && (
-                      <Polyline 
-                        positions={[drones.find(d => d.id === draftMission.droneId).coordinates, draftMission.targetCoords]} 
-                        pathOptions={{ color: '#00F0FF', dashArray: '5, 10', weight: 2 }} 
-                      />
-                    )}
-                  </>
-                )}
-              </MapContainer>
-            </div>
-            {/* MISSION PLANNER OVERLAY */}
-            {activeTab === 'planner' && (
-              <div className="absolute inset-0 z-10 p-6 pointer-events-none">
-                <div className="border border-tactical-border p-5 rounded-lg bg-slate-950/90 shadow-2xl shadow-black/50 w-full max-w-sm backdrop-blur-md pointer-events-auto">
-                  <h3 className="text-xs font-bold text-tactical-cyan mb-3 flex items-center gap-1.5">
-                    <PlusCircle className="h-4 w-4" /> REJESTRACJA NOWEJ MISJI
-                  </h3>
-                  
-                  <div className="space-y-4 text-xs">
+                  {selectedDrone?.id === drone.id && <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-60"></div>}
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <label className="text-slate-500 block mb-1">WYBIERZ DRONA Z FLOTY</label>
-                      <select 
-                        value={draftMission.droneId}
-                        onChange={(e) => setDraftMission({...draftMission, droneId: e.target.value})}
-                        className="w-full bg-slate-900 border border-tactical-border p-2 rounded text-slate-300"
-                      >
-                        <option value="" disabled>-- Wybierz Drona --</option>
-                        {drones.map(d => (
-                          <option key={d.id} value={d.id}>{d.name} ({d.model})</option>
-                        ))}
-                      </select>
+                      <h3 className="font-bold text-white text-sm mb-0.5 pr-4">{drone.name}</h3>
+                      <p className="text-[10px] text-primary font-bold uppercase tracking-tighter">{drone.department} • {getStatusLabel(drone.status)}</p>
                     </div>
-
-                    <div>
-                      <label className="text-slate-500 block mb-1">WYSOKOŚĆ LOTU</label>
-                      <div className="flex gap-2 items-center">
-                        <input 
-                          type="number" 
-                          value={draftMission.altitude}
-                          onChange={(e) => setDraftMission({...draftMission, altitude: Number(e.target.value)})}
-                          className="w-full bg-slate-900 border border-tactical-border p-2 rounded text-slate-300" 
-                        />
-                        <span className="text-slate-400">METRÓW AGL</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-slate-500 block mb-1">CEL MISJI (WSPÓŁRZĘDNE GPS)</label>
-                      <input 
-                        type="text" 
-                        value={draftMission.targetCoords ? `${draftMission.targetCoords[0].toFixed(4)}, ${draftMission.targetCoords[1].toFixed(4)}` : ""}
-                        placeholder="Kliknij w dowolne miejsce na mapie" 
-                        disabled 
-                        className="w-full bg-slate-950 border border-tactical-border p-2 rounded text-tactical-cyan font-bold" 
-                      />
-                    </div>
-
-                    {missionStatus === 'ALERT' && (
-                      <div className="bg-tactical-red/20 border border-tactical-red p-3 rounded">
-                        <p className="text-tactical-red font-bold flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4" /> {alertMessage}
-                        </p>
-                        <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                          <input type="checkbox" checked={draftMission.bypassP01} onChange={(e) => setDraftMission({...draftMission, bypassP01: e.target.checked})} />
-                          <span className="text-slate-300">Odblokuj: Autoryzacja MON</span>
-                        </label>
-                      </div>
-                    )}
-
-                    {missionStatus !== 'ALERT' && alertMessage && (
-                      <div className="bg-tactical-orange/20 border border-tactical-orange p-3 rounded">
-                        <p className="text-tactical-orange font-bold flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4" /> {alertMessage}
-                        </p>
-                      </div>
-                    )}
-
-                    {missionStatus === 'APPROVED' && (
-                      <div className="bg-tactical-green/20 border border-tactical-green p-3 rounded">
-                        <p className="text-tactical-green font-bold flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4" /> PansaUTM Zatwierdzone. {transponderCode}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="pt-2">
-                      {missionStatus === 'DRAFT' || missionStatus === 'ALERT' ? (
-                        <button 
-                          onClick={checkAirspace}
-                          className="w-full bg-slate-800 hover:bg-slate-700 border border-tactical-border text-slate-300 p-2.5 rounded font-bold transition flex items-center justify-center gap-2"
+                    <div className="flex items-center gap-1.5">
+                      {drone.status !== 'STANDBY' && drone.status !== 'OFFLINE' && drone.status !== 'LINK_LOST' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            simulateLinkLost(drone.id);
+                          }}
+                          title="Symuluj utratę sygnału (LINK LOST)"
+                          className="p-1 rounded bg-error/15 border border-error/30 hover:bg-error/30 text-error flex items-center justify-center transition cursor-pointer"
                         >
-                          <Crosshair className="h-4 w-4" /> SPRAWDŹ PRZESTRZEŃ (UTM VALIDATE)
-                        </button>
-                      ) : missionStatus === 'VERIFYING' ? (
-                        <button disabled className="w-full bg-slate-800 border border-tactical-border text-slate-500 p-2.5 rounded font-bold flex items-center justify-center gap-2">
-                          <Activity className="h-4 w-4 animate-spin" /> WERYFIKACJA PansaUTM...
-                        </button>
-                      ) : missionStatus === 'APPROVED' ? (
-                        <button 
-                          onClick={dispatchMission}
-                          className="w-full bg-tactical-cyan/20 hover:bg-tactical-cyan/40 border border-tactical-cyan/50 text-tactical-cyan p-2.5 rounded font-bold transition flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(0,240,255,0.2)]"
-                        >
-                          <Send className="h-4 w-4" /> LAUNCH MISSION
-                        </button>
-                      ) : (
-                        <button disabled className="w-full bg-tactical-green/20 border border-tactical-green/50 text-tactical-green p-2.5 rounded font-bold flex items-center justify-center gap-2">
-                          <CheckCircle className="h-4 w-4" /> DISPATCHED
+                          <span className="material-symbols-outlined text-[13px] font-bold">bolt</span>
                         </button>
                       )}
+                      <span className="material-symbols-outlined text-primary text-[18px] opacity-80">
+                        {drone.status === 'STANDBY' ? 'medical_services' : (drone.department.includes('Straż') ? 'local_fire_department' : 'sensors')}
+                      </span>
                     </div>
                   </div>
+                  <div className="grid grid-cols-3 gap-4 mb-3">
+                    <div>
+                      <p className="text-[9px] uppercase font-bold text-on-surface-variant opacity-60 mb-1">Bateria</p>
+                      <p className={`text-sm font-mono font-bold ${drone.battery < 20 ? 'text-error' : 'text-white'}`}>{drone.battery}%</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase font-bold text-on-surface-variant opacity-60 mb-1">Sygnał</p>
+                      <p className="text-sm font-mono text-white">{drone.signal}dBm</p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] uppercase font-bold text-on-surface-variant opacity-60 mb-1">Wysokość</p>
+                      <p className="text-sm font-mono text-white">{drone.altitude}m</p>
+                    </div>
+                  </div>
+                  <div className="w-full h-[2px] bg-white/5 rounded-full overflow-hidden">
+                    <div className={`h-full ${drone.battery < 20 ? 'bg-error' : 'bg-primary'}`} style={{width: `${drone.battery}%`}}></div>
+                  </div>
                 </div>
-              </div>
-            )}
-
+              ))}
+            </div>
           </div>
-        </section>
 
-        {/* RIGHT COLUMN: DIAGNOSTICS & LOGS */}
-        <section className="w-1/4 min-w-[280px] flex flex-col gap-4 overflow-hidden">
-          
-          {/* DIAGNOSTICS HUB / SELECTED DRONE DETALS */}
-          <div className="flex-1 bg-slate-950/40 border border-tactical-border rounded-lg p-3 backdrop-blur-sm flex flex-col">
+          {/* DIAGNOSTICS / HUD */}
+          <div className="h-[460px] shrink-0 glass-panel rounded-xl flex flex-col p-4 border border-white/5 overflow-hidden">
             {selectedDrone ? (
               <div className="flex flex-col h-full">
-                <div className="flex items-center justify-between border-b border-tactical-border pb-2 mb-3">
-                  <h3 className="text-xs font-bold text-tactical-cyan flex items-center gap-1.5">
-                    <Navigation className="h-4 w-4" /> TELEMETRIA HUD
+                <div className="flex items-center justify-between border-b border-white/5 pb-2 mb-3">
+                  <h3 className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px]">navigation</span> TELEMETRIA HUD
                   </h3>
-                  <button onClick={() => setSelectedDroneId(null)} className="text-[10px] text-slate-500 hover:text-slate-300">ZAMKNIJ</button>
+                  <button onClick={() => setSelectedDroneId(null)} className="text-[10px] text-on-surface-variant hover:text-white">ZAMKNIJ</button>
                 </div>
-
                 <div className="flex-1 space-y-3 text-xs overflow-y-auto pr-1">
-                  <div className="border border-tactical-border/50 p-2.5 rounded bg-slate-900/30">
-                    <p className="text-[10px] text-slate-500">DODATEK DO ZADANIA DUAL-USE</p>
-                    <p className="text-xs font-bold text-slate-100">{selectedDrone.name}</p>
-                    <p className="text-[10px] text-tactical-cyan mt-1">{selectedDrone.legalClass}</p>
+                  {selectedDrone.status === 'LINK_LOST' && (
+                    <div className="border border-error/50 p-2.5 rounded bg-error/15 text-error text-center animate-pulse font-bold text-[10px] tracking-wider mb-2 flex items-center justify-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px]">warning</span>
+                      UTRATA SYGNAŁU: PROCEDURA RTH AKTYWNA
+                    </div>
+                  )}
+                  <div className="border border-white/10 p-2.5 rounded bg-white/[0.02]">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-[10px] text-on-surface-variant">DODATEK DO ZADANIA DUAL-USE</p>
+                        <p className="text-xs font-bold text-white">{selectedDrone.name}</p>
+                        <p className="text-[10px] text-primary mt-1">{selectedDrone.legalClass}</p>
+                      </div>
+                      <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${selectedDrone.status === 'LINK_LOST' ? 'bg-error/20 text-error' : 'bg-green-500/20 text-green-400'}`}>
+                        {selectedDrone.status === 'LINK_LOST' ? 'MESH: LOST' : 'MESH: OK'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Remote ID & Mesh Link Info (fixes Point 5: Remote ID / MESH in the Audit) */}
+                  <div className="grid grid-cols-2 gap-2 text-[9px]">
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5 flex flex-col justify-between">
+                      <span className="text-on-surface-variant uppercase font-bold tracking-tight">Remote ID (DRI)</span>
+                      <span className="text-white font-mono mt-1 overflow-hidden text-ellipsis whitespace-nowrap">PL-OP-{selectedDrone.id.slice(6, 12) || '923812'}</span>
+                      <span className="text-green-400 font-bold mt-0.5 flex items-center gap-0.5"><span className="w-1 h-1 rounded-full bg-green-400 animate-ping"></span>NADAJE</span>
+                    </div>
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5 flex flex-col justify-between">
+                      <span className="text-on-surface-variant uppercase font-bold tracking-tight">Łącze MESH</span>
+                      <span className="text-white font-mono mt-1">{selectedDrone.status === 'LINK_LOST' ? 'ROZŁĄCZONY' : '84% (Stabilny)'}</span>
+                      <span className={`font-bold mt-0.5 ${selectedDrone.status === 'LINK_LOST' ? 'text-error' : 'text-primary'}`}>
+                        {selectedDrone.status === 'LINK_LOST' ? 'ERR: NO RF LINK' : 'RF FALLBACK AKT.'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
-                    <div className="bg-slate-900/40 p-2 rounded border border-tactical-border">
-                      <p className="text-slate-500">WYSOKOŚĆ</p>
-                      <p className="text-sm font-bold text-slate-200">{selectedDrone.altitude} m AGL</p>
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5">
+                      <p className="text-on-surface-variant">WYSOKOŚĆ</p>
+                      <p className="text-sm font-bold text-white">{selectedDrone.altitude} m AGL</p>
                     </div>
-                    <div className="bg-slate-900/40 p-2 rounded border border-tactical-border">
-                      <p className="text-slate-500">PRĘDKOŚĆ</p>
-                      <p className="text-sm font-bold text-slate-200">{selectedDrone.speed} m/s</p>
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5">
+                      <p className="text-on-surface-variant">PRĘDKOŚĆ</p>
+                      <p className="text-sm font-bold text-white">{selectedDrone.speed} m/s</p>
                     </div>
-                    <div className="bg-slate-900/40 p-2 rounded border border-tactical-border">
-                      <p className="text-slate-500">SYGNAŁ dBm</p>
-                      <p className="text-sm font-bold text-tactical-green">{selectedDrone.signal} dBm</p>
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5">
+                      <p className="text-on-surface-variant">SYGNAŁ dBm</p>
+                      <p className="text-sm font-bold text-green-400">{selectedDrone.signal} dBm</p>
                     </div>
-                    <div className="bg-slate-900/40 p-2 rounded border border-tactical-border">
-                      <p className="text-slate-500">BATERIA</p>
-                      <p className="text-sm font-bold text-tactical-cyan">{selectedDrone.battery}%</p>
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5">
+                      <p className="text-on-surface-variant">BATERIA</p>
+                      <p className="text-sm font-bold text-primary">{selectedDrone.battery}%</p>
                     </div>
                   </div>
 
-                  <div className="border border-tactical-border/50 p-2.5 rounded bg-slate-900/30 text-[10px]">
-                    <p className="text-slate-500 uppercase">AKTYWNY PAYLOAD</p>
-                    <p className="text-slate-300 font-bold mt-1">{selectedDrone.payload}</p>
+                  {/* Edge AI Analyzer (fixes Point 5: Edge AI in the Audit) */}
+                  <div className="border border-white/5 p-2.5 rounded bg-white/[0.02] text-[10px]">
+                    <p className="text-on-surface-variant uppercase font-bold tracking-wider text-[8px] mb-1">Analiza wideo na brzegu (Edge AI YOLOv8)</p>
+                    <p className="text-white font-bold">{getAiDetection(selectedDrone)}</p>
+                  </div>
+
+                  {/* 3D Vertical Height Profile (fixes Point 5: 3D Height Profile in the Audit) */}
+                  <div className="bg-white/[0.02] p-2.5 rounded border border-white/5">
+                    <p className="text-on-surface-variant mb-1.5 uppercase text-[8px] font-bold tracking-wider">Przekrój Wysokościowy 3D (AGL vs Teren)</p>
+                    <div className="h-16 w-full relative bg-black/40 border border-white/5 rounded overflow-hidden">
+                      <svg viewBox="0 0 100 40" className="w-full h-full" preserveAspectRatio="none">
+                        {/* Ground Terrain */}
+                        <path d="M 0 35 Q 25 32 50 37 T 100 35 L 100 40 L 0 40 Z" fill="rgba(16, 185, 129, 0.15)" stroke="rgba(16, 185, 129, 0.4)" strokeWidth="0.5" />
+                        
+                        {/* 120m Open Category Limit line */}
+                        <line x1="0" y1="12" x2="100" y2="12" stroke="#ef4444" strokeWidth="0.5" strokeDasharray="1,2" />
+                        <text x="2" y="10" fill="#ef4444" fontSize="2.5" fontWeight="bold">LIMIT EASA (120m)</text>
+                        
+                        {/* Obstacle (e.g. ECSW Chimneys or HSW Hangar) if applicable */}
+                        {selectedDrone.id.includes('fire') && (
+                          <>
+                            <rect x="75" y="18" width="5" height="17" fill="rgba(245, 158, 11, 0.3)" stroke="rgba(245, 158, 11, 0.6)" strokeWidth="0.5" />
+                            <text x="68" y="16" fill="#f59e0b" fontSize="2" fontWeight="bold">Komin ECSW</text>
+                          </>
+                        )}
+                        {selectedDrone.id.includes('pol') && (
+                          <>
+                            <rect x="70" y="24" width="8" height="11" fill="rgba(239, 68, 68, 0.3)" stroke="rgba(239, 68, 68, 0.6)" strokeWidth="0.5" />
+                            <text x="66" y="22" fill="#ef4444" fontSize="2" fontWeight="bold">Hangar HSW</text>
+                          </>
+                        )}
+
+                        {/* Drone profile drawing */}
+                        {(() => {
+                          const droneY = 35 - (selectedDrone.altitude / 150) * 30;
+                          return (
+                            <>
+                              <line x1="10" y1="35" x2="50" y2={droneY} stroke="rgba(99, 102, 241, 0.4)" strokeWidth="0.5" strokeDasharray="2,2" />
+                              <line x1="50" y1={droneY} x2="90" y2="35" stroke="rgba(99, 102, 241, 0.2)" strokeWidth="0.5" strokeDasharray="2,2" />
+                              
+                              <circle cx="50" cy={droneY} r="1.5" fill="#6366f1" />
+                              <circle cx="50" cy={droneY} r="3.5" fill="none" stroke="#6366f1" strokeWidth="0.3" className="animate-pulse" />
+                              
+                              <text x="54" y={Math.max(8, droneY + 1)} fill="#fff" fontSize="3.5" fontFamily="monospace" fontWeight="bold">{selectedDrone.altitude}m AGL</text>
+                            </>
+                          );
+                        })()}
+                      </svg>
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col h-full justify-between">
                 <div>
-                  <div className="border-b border-tactical-border pb-2 mb-3">
-                    <h3 className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                      <Navigation className="h-4 w-4 text-tactical-cyan" /> WARUNKI ATMOSFERYCZNE
+                  <div className="border-b border-white/5 pb-2 mb-3">
+                    <h3 className="text-xs font-bold text-on-surface-variant flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px] text-primary">sensors</span> WARUNKI ATMOSFERYCZNE
                     </h3>
                   </div>
-
-                  <div className="space-y-2.5 text-xs">
-                    <div className={`flex justify-between items-center bg-slate-900/20 p-2 rounded border border-tactical-border/50 transition ${windSpeed > 10 ? 'border-tactical-red/50 bg-tactical-red/10' : ''}`}>
-                      <span className="text-slate-500 flex items-center gap-1"><Wind className="h-3.5 w-3.5" /> WIATR</span>
-                      <span className={`font-bold ${windSpeed > 10 ? 'text-tactical-red animate-pulse' : 'text-tactical-green'}`}>
-                        {windSpeed.toFixed(1)} m/s {windSpeed > 10 ? '(HIGH)' : '(SAFE)'}
+                  <div className="space-y-2 text-xs">
+                    <div className={`flex justify-between items-center bg-white/[0.02] p-2 rounded border transition ${windSpeed > 10 ? 'border-error/50 bg-error/10' : 'border-white/5'}`}>
+                      <span className="text-on-surface-variant flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">air</span> WIATR</span>
+                      <span className={`font-bold ${windSpeed > 10 ? 'text-error animate-pulse' : 'text-green-400'}`}>
+                        {windSpeed.toFixed(1)} m/s {windSpeed > 10 ? '(NIEBEZPIECZNY)' : '(BEZPIECZNY)'}
                       </span>
                     </div>
-
-                    <div className="bg-slate-900/20 p-2 rounded border border-tactical-border/50">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-slate-500 flex items-center gap-1"><Wifi className="h-3.5 w-3.5" /> EM NOISE</span>
-                        <span className="font-bold text-tactical-cyan">{emData[emData.length - 1]?.value.toFixed(0)} dBm</span>
+                    <div className="bg-white/[0.02] p-2 rounded border border-white/5">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-on-surface-variant flex items-center gap-1"><span className="material-symbols-outlined text-[14px]">wifi_tethering</span> SZUM EM</span>
+                        <span className="font-bold text-primary">{emData[emData.length - 1]?.value.toFixed(0)} dBm</span>
                       </div>
-                      <div className="h-16 w-full opacity-70">
+                      <div className="h-12 w-full opacity-70">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={emData}>
-                            <Line type="monotone" dataKey="value" stroke="#00F0FF" strokeWidth={2} dot={false} isAnimationActive={false} />
+                            <Line type="monotone" dataKey="value" stroke="#6366f1" strokeWidth={2} dot={false} isAnimationActive={false} />
                             <YAxis domain={[-100, -40]} hide />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
-
-                    <div className="flex justify-between items-center bg-slate-900/20 p-2 rounded border border-tactical-border/50">
-                      <span className="text-slate-500 flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> PUŁAP / WIDOCZNOŚĆ</span>
-                      <span className="font-bold text-slate-200">10 km (NOMINAL)</span>
-                    </div>
                   </div>
                 </div>
-
-                <div className={`border p-3 rounded text-[10px] leading-normal transition ${windSpeed > 10 ? 'border-tactical-red/50 bg-tactical-red/20 text-tactical-red' : 'border-tactical-border/50 bg-slate-900/30 text-slate-500'}`}>
-                  <p className={`font-bold mb-1 flex items-center gap-1 ${windSpeed > 10 ? 'text-tactical-red' : 'text-slate-400'}`}>
-                    <AlertTriangle className={`h-3.5 w-3.5 ${windSpeed > 10 ? 'text-tactical-red' : 'text-tactical-orange'}`} /> 
+                <div className={`border p-2 rounded text-[9px] leading-relaxed transition ${windSpeed > 10 ? 'border-error/50 bg-error/20 text-error' : 'border-white/10 bg-white/[0.02] text-on-surface-variant'}`}>
+                  <p className={`font-bold mb-1 flex items-center gap-1 ${windSpeed > 10 ? 'text-error' : 'text-on-surface-variant'}`}>
+                    <span className="material-symbols-outlined text-[12px]">warning</span> 
                     {windSpeed > 10 ? 'ALERT POGODOWY:' : 'WSKAZÓWKA TAKTYCZNA:'}
                   </p>
                   {windSpeed > 10 
                     ? 'SILNY WIATR. Loty klasy Open A1/A2 wstrzymane. Dozwolone tylko jednostki ciężkie RTK.' 
-                    : 'Kliknij dowolnego drona z panelu po lewej stronie, aby przejąć bezpośrednią kontrolę i otworzyć dedykowany pulpit telemetryczny w tym panelu.'}
+                    : 'Wybierz drona, aby otworzyć pulpit telemetryczny HUD.'}
                 </div>
               </div>
             )}
           </div>
-
-          {/* INCIDENT COMMAND LOG */}
-          <div className="h-1/2 bg-slate-950/40 border border-tactical-border rounded-lg p-3 backdrop-blur-sm flex flex-col">
-            <div className="flex items-center justify-between border-b border-tactical-border pb-2 mb-3">
-              <h3 className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                <AlertOctagon className="h-4 w-4 text-tactical-red" /> TERYTORIALNY LOG ALERTÓW
-              </h3>
-              <span className="text-[9px] bg-tactical-red/10 text-tactical-red border border-tactical-red/20 px-1 rounded animate-pulse">LIVE</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 text-[11px]">
-              {incidents.map(incident => (
-                <div 
-                  key={incident.id} 
-                  onClick={() => {
-                    setMapFocusCoords(incident.coords);
-                    if(incident.droneId) setSelectedDroneId(incident.droneId);
-                    if(soundEnabled && incident.priority === 'CRITICAL') playSound('alert');
-                    setActiveTab('map');
-                  }}
-                  className={`p-2 border rounded cursor-pointer transition ${
-                    incident.status === 'RESOLVED' ? 'bg-slate-900/40 border-tactical-border/30 opacity-50' :
-                    incident.priority === 'CRITICAL' ? 'bg-slate-950/80 border-tactical-red/30 hover:bg-tactical-red/20' :
-                    incident.priority === 'HIGH' ? 'bg-slate-950/80 border-tactical-orange/30 hover:bg-tactical-orange/20' :
-                    'bg-slate-950/80 border-tactical-cyan/30 hover:bg-tactical-cyan/20'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`px-1.5 py-0.5 rounded font-bold text-[8px] border ${
-                      incident.status === 'RESOLVED' ? 'bg-slate-800 text-slate-400 border-slate-600' :
-                      incident.priority === 'CRITICAL' ? 'bg-tactical-red/15 text-tactical-red border-tactical-red/30 shadow-[0_0_8px_rgba(255,46,147,0.5)]' : 
-                      incident.priority === 'HIGH' ? 'bg-tactical-orange/15 text-tactical-orange border-tactical-orange/30 shadow-[0_0_8px_rgba(255,184,0,0.5)]' : 
-                      'bg-tactical-cyan/15 text-tactical-cyan border-tactical-cyan/30'
-                    }`}>
-                      {incident.status === 'RESOLVED' ? 'RESOLVED' : incident.priority}
-                    </span>
-                    <span className="text-[9px] text-slate-500">{incident.time}</span>
-                  </div>
-                  <h4 className={`font-bold text-xs truncate ${incident.status === 'RESOLVED' ? 'text-slate-400' : 'text-slate-200'}`}>{incident.title}</h4>
-                  <p className="text-[10px] text-slate-500 truncate mb-2">{incident.location}</p>
-                  
-                  {incident.status === 'ACTIVE' && (
-                    <div className="flex gap-2 mt-2">
-                      <button 
-                        onClick={(e) => handleAutoAssign(incident, e)}
-                        className="flex-1 bg-tactical-cyan/20 hover:bg-tactical-cyan/40 text-tactical-cyan border border-tactical-cyan/30 rounded py-1 text-[9px] font-bold transition"
-                      >
-                        AUTO-PRZYPISZ
-                      </button>
-                      <button 
-                        onClick={(e) => handleResolve(incident, e)}
-                        className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-600 rounded py-1 text-[9px] transition"
-                      >
-                        ZAKOŃCZ
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
         </section>
+
+        <MapSection
+          mapFocusCoords={mapFocusCoords}
+          setMapFocusCoords={setMapFocusCoords}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          showOrtoLayer={showOrtoLayer}
+          draftMission={draftMission}
+          setDraftMission={setDraftMission}
+          drones={drones}
+          setSelectedDroneId={setSelectedDroneId}
+          timelineEvents={timelineEvents}
+          exportOperationalReport={exportOperationalReport}
+        />
+
+        <SidebarPanel
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          selectedScenario={selectedScenario}
+          setSelectedScenario={setSelectedScenario}
+          triggerCrisisScenario={triggerCrisisScenario}
+          incidents={incidents}
+          setMapFocusCoords={setMapFocusCoords}
+          setSelectedDroneId={setSelectedDroneId}
+          soundEnabled={soundEnabled}
+          playSound={playSound}
+          handleAutoAssign={handleAutoAssign}
+          handleResolve={handleResolve}
+          draftMission={draftMission}
+          setDraftMission={setDraftMission}
+          drones={drones}
+          missionStatus={missionStatus}
+          alertMessage={alertMessage}
+          transponderCode={transponderCode}
+          checkAirspace={checkAirspace}
+          dispatchMission={dispatchMission}
+          exportOperationalReport={exportOperationalReport}
+        />
 
       </main>
     </div>
