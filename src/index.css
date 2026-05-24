@@ -170,6 +170,23 @@
 .leaflet-tooltip-top::before { border-top-color: rgba(15, 23, 42, 0.95) !important; }
 .leaflet-tooltip-bottom::before { border-bottom-color: rgba(15, 23, 42, 0.95) !important; }
 
+.infra-zone-label {
+  background: rgba(2, 2, 3, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 3px !important;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.8) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  padding: 2px 5px !important;
+  text-transform: uppercase !important;
+  pointer-events: none !important;
+}
+
+.infra-zone-label::before {
+  display: none !important;
+}
+
 /* Usuwanie niebieskiej obwódki focus (outline) przy klikaniu na interaktywne strefy mapy */
 .leaflet-interactive:focus {
   outline: none !important;
@@ -182,4 +199,22 @@
 .leaflet-container svg:focus {
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* Wymuszenie zmiany kursora na wszystkich klikalnych elementach */
+button, 
+[role="button"], 
+a, 
+select, 
+input[type="file"],
+input[type="checkbox"],
+input[type="radio"],
+label {
+  cursor: pointer !important;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed !important;
 }

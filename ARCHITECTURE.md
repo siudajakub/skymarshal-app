@@ -1,17 +1,19 @@
-# 🌐 SkyMarshal C2 TAC-NET: Real-World Integration & Architecture
+# SkyMarshal C2 TAC-NET: Prototype Status & Pilot Architecture
 
-This document outlines how the **SkyMarshal** platform transitions from a highly functional hackathon prototype (MVP) into a production-ready, mission-critical Tactical Command & Control (C2) system deployed in Stalowa Wola, Poland.
+This document outlines how the **SkyMarshal** hackathon prototype can transition into a production-ready coordination system for Stalowa Wola, Poland.
+
+Current prototype status: Geoportal/GUGiK WMS and public reference links are active. PAŻP/DroneTower, SWD-ST, MON, DJI Cloud, MAVLink telemetry, and private databases are not connected. They are represented as planned pilot integrations and simulated workflows.
 
 ---
 
 ## 🏗️ 1. Production Architecture Overview
 
-In a real-world deployment, SkyMarshal acts as an **integrator layer** (Common Information Service - CIS) connecting field hardware, national airspace systems, and emergency dispatch services.
+In a pilot deployment, SkyMarshal would act as an **integrator layer** connecting field hardware, national airspace systems, and emergency dispatch services after formal access, agreements, and security review.
 
 ```mermaid
 graph TD
     subgraph "Służby i Zgłoszenia (Incident Input)"
-        SWD[Systemy SWD-ST / Policji] -->|REST API / Webhooks| C2[SkyMarshal Core Backend]
+        SWD[Systemy SWD-ST / Policji] -.->|planned REST API / Webhooks| C2[SkyMarshal Core Backend]
     end
 
     subgraph "SkyMarshal C2 Engine"
@@ -21,13 +23,13 @@ graph TD
     end
 
     subgraph "Krajowy System Kontroli Powietrznej"
-        C2 <-->|Open API / WebSockets| PANSA[PansaUTM / PAŻP CIS]
+        C2 <-.->|planned API / WebSockets| PANSA[PansaUTM / PAŻP CIS]
     end
 
     subgraph "Flota Bezpilotowa (UAS Flight Hardware)"
-        DJI[DJI FlightHub 2 API] <-->|LTE / 5G| C2
-        MAV[MAVLink / QGroundControl] <-->|LTE / ROS2 / MAVSDK| C2
-        Stream[WebRTC / RTSP Media Server] -->|Live Thermal Video| UI
+        DJI[DJI FlightHub 2 API] <-.->|planned LTE / 5G| C2
+        MAV[MAVLink / QGroundControl] <-.->|planned LTE / ROS2 / MAVSDK| C2
+        Stream[WebRTC / RTSP Media Server] -.->|planned live video| UI
     end
     
     style C2 fill:#00F0FF,stroke:#333,stroke-width:2px,color:#000
@@ -40,19 +42,21 @@ graph TD
 
 To ensure maximum **Correctness (Poprawność)** and **Impact (Wpływ)** in the eyes of the jury, SkyMarshal is designed around four standard integration interfaces:
 
-### A. National Airspace System: PAŻP PansaUTM
+### A. National Airspace System: PAŻP / DroneTower
 *   **How it works:** Under Polish and EU U-Space regulations, all commercial/state drone flights must register with the Polish Air Navigation Services Agency (PAŻP).
-*   **Integration:** SkyMarshal acts as a **USP (U-Space Service Provider)**. It exchanges flight plans, requests geofenced clearances, and updates live telemetry via PAŻP's standard **Common Information Services (CIS) REST & WebSocket API**.
-*   **Real-world Value:** Eliminates the manual process of operators calling flight towers or using consumer apps, automating airspace check-in.
+*   **Prototype status:** SkyMarshal simulates the UTM submission workflow and generates a working XPNDR code for demonstration only.
+*   **Pilot integration path:** After PAŻP/DroneTower access is granted, SkyMarshal would exchange flight plans, clearance status, and telemetry using the approved interface available to the pilot.
+*   **Real-world Value:** Reduces duplicate manual work for operators while preserving external authorization as the source of truth.
 
 ### B. Hardware Integration: DJI FlightHub 2 & MAVLink
-Connecting directly to individual radio controllers is unfeasible. Instead, SkyMarshal leverages enterprise cloud APIs:
-1.  **DJI Enterprise Drones:** Integrates with **DJI FlightHub 2 Cloud API**. SkyMarshal pushes waypoints and controls via DJI API, which then relays them to industrial docks or controllers over LTE/5G.
-2.  **Custom/Open-Source Drones (MAVLink):** For custom heavy-lift cargo drones, onboard companion computers (e.g., Raspberry Pi 5 / Jetson Orin Nano) running **MAVSDK** or **ROS2** communicate telemetry over secure VPN tunnels directly to SkyMarshal's **MQTT broker**.
+The prototype uses demonstration fleet data or locally imported JSON scenarios. In a pilot:
+1.  **DJI Enterprise Drones:** SkyMarshal would integrate with **DJI FlightHub 2 Cloud API** only after account/API access is approved.
+2.  **Custom/Open-Source Drones (MAVLink):** Companion computers running **MAVSDK** or **ROS2** could send telemetry to SkyMarshal's **MQTT broker** over a secured network.
 
 ### C. Emergency Services: SWD-ST / SWD-Policja
 *   **How it works:** When a citizen reports a fire or accident, it enters the **System Wspomagania Dowodzenia (SWD)**.
-*   **Integration:** SkyMarshal listens to SWD message queues (RabbitMQ/Kafka). Upon receiving a dispatch event with GPS coordinates:
+*   **Prototype status:** incidents are demonstrational or imported from local JSON files.
+*   **Pilot integration path:** SkyMarshal could listen to approved SWD message queues (RabbitMQ/Kafka) or REST webhooks. Upon receiving a dispatch event with GPS coordinates:
     1.  The system automatically selects the nearest standby drone based on battery, speed, and sensor capabilities.
     2.  An optimized, legally-compliant trajectory is pre-calculated.
     3.  The human dispatcher only needs to click **"Approve & Launch"**.

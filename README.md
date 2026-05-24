@@ -2,7 +2,7 @@
 
 **SKYMARSHAL C2 TAC-NET** (Tactical Command & Control Network) to zaawansowana, wielozadaniowa platforma dyspozytorska klasy **dual-use** (podwójnego zastosowania), zaprojektowana specjalnie dla miasta Stalowa Wola w ramach hackathonu **SpaceShield Hack 2026**.
 
-System integruje rozproszone floty bezzałogowych statków powietrznych (UAV) podlegające różnym służbom miejskim i ratowniczym (Policja, Państwowa Straż Pożarna, Ochotnicza Straż Pożarna, Centrum Zarządzania Kryzysowego) w spójne, inteligentne środowisko operacyjne zdolne do reagowania na incydenty cywilne, kryzysowe oraz militarne.
+Prototyp demonstracyjnie koordynuje rozproszone floty bezzałogowych statków powietrznych (UAV) podlegające różnym służbom miejskim i ratowniczym (Policja, Państwowa Straż Pożarna, Ochotnicza Straż Pożarna, Centrum Zarządzania Kryzysowego). Nie ma prawdziwego dostępu do PAŻP/DroneTower, SWD-ST, MON ani prywatnych baz danych; pokazuje realistyczny proces i gotową ścieżkę integracji pilotażowej.
 
 ---
 
@@ -16,13 +16,13 @@ System integruje rozproszone floty bezzałogowych statków powietrznych (UAV) po
 *   **Scenariusz masowy/kryzysowy**: Jedno przyciskowe wyzwalanie skoordynowanej akcji w przypadku zmasowanego pożaru lub naruszenia bezpieczeństwa na terenie Zakładów Huty Stalowa Wola (HSW).
 *   Automatyczne delegowanie wielu jednostek (np. dron Policji do zabezpieczenia obwodu i dron Straży Pożarnej do zwiadu termowizyjnego) do wspólnego celu z różnymi pułapami operacyjnymi w celu dekonfliktacji.
 
-### 3. Autorski Silnik Omijania Stref (Arc Avoidance)
-*   **Multi-Point Straight-Segment Bypass**: Silnik wyznaczania bezpiecznych trajektorii lotu omijający wojskową strefę zakazaną **P-01 (HSW)**.
+### 3. Router Operacyjny Prototypu
+*   **Multi-Point Straight-Segment Bypass**: demonstracyjny router wyznaczania bezpiecznych trajektorii lotu omijający modelową operacyjną strefę ochronną **HSW**.
 *   System automatycznie analizuje linię prostą między startem a celem, wykrywa kolizję z obszarem chronionym oraz generuje ciasny wielobok omijający (3 punkty pośrednie z bezpiecznym buforem 300 metrów), co eliminuje konieczność wykonywania nadrabiających drogę, okrężnych tras.
 
-### 4. Przepisy U-Space i Walidacja UTM (PansaUTM)
+### 4. Przepisy U-Space i Symulacja Zgłoszenia UTM
 *   **Weryfikacja Pułapów**: Sztywne ograniczenie wysokości lotu do **120m AGL** (Above Ground Level) w Kreatorze Misji zgodnie z przepisami kategorii Otwartej EASA/ULC z systemem ostrzeżeń.
-*   **Integracja PansaUTM**: Emulacja zgłaszania planów lotu i przydzielania unikalnych kodów transpondera **XPNDR** do weryfikacji tożsamości w krajowym systemie UTM.
+*   **Symulacja procesu PAŻP/DroneTower**: Emulacja zgłaszania planów lotu i przydzielania roboczego kodu **XPNDR**. Nie jest to prawdziwe zatwierdzenie ani realna integracja z krajowym systemem UTM.
 *   **Monitoring Zakłóceń EM**: Ostrzeżenia przed anomaliami elektromagnetycznymi i radiowymi w strefie Elektrociepłowni Stalowa Wola **R-05** z dynamicznym wykresem szumu tła.
 
 ### 5. Nowoczesny i Ergonomiczny Kreator Misji (Side-by-side)
@@ -51,7 +51,7 @@ Aplikacja została zbudowana z zachowaniem najwyższych standardów wydajnościo
 Dla pełnej przejrzystości i spójności projektu, w repozytorium znajdują się dedykowane pliki dokumentacji:
 
 1.  [**`README.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/README.md) – Niniejszy plik wprowadzający i instrukcja uruchomienia.
-2.  [**`ARCHITECTURE.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/ARCHITECTURE.md) – Szczegółowy opis architektury produkcyjnej, integracji z DJI Cloud API, PansaUTM (PAŻP), systemami SWD-ST oraz bazą danych PostgreSQL/PostGIS.
+2.  [**`ARCHITECTURE.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/ARCHITECTURE.md) – Docelowa architektura pilotażowa i przyszłe punkty integracji z DJI Cloud API, PansaUTM/PAŻP, systemami SWD-ST oraz bazą danych PostgreSQL/PostGIS.
 3.  [**`SOURCES.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/SOURCES.md) – Wykaz jawnych publicznych źródeł danych przestrzennych i prawnych (wymóg formalny regulaminu).
 4.  [**`PITCH_DECK.md`**](file:///Users/j/Spaceshield/dualuse/PITCH_DECK.md) – Gotowy szablon prezentacji inwestycyjnej (10 slajdów) oraz profesjonalny scenariusz wideo demonstracyjnego dla jury.
 5.  [**`AGENTS.MD`**](file:///Users/j/Spaceshield/dualuse/AGENTS.MD) – Dynamiczna karta stanu projektu dla deweloperów i agentów AI (Context Compact).

@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, Circle, Polyline, Tooltip, useMapEvents, useMap } from 'react-leaflet';
-import { commandCenterIcon, waterStationIcon, turbiaAirportIcon, getDroneIcon } from '../data/mapConfig';
+import { MapContainer, TileLayer, WMSTileLayer, Marker, Popup, Circle, Polyline, Tooltip, useMapEvents, useMap, Polygon } from 'react-leaflet';
+import { commandCenterIcon, turbiaAirportIcon, getDroneIcon, getInfrastructureIcon, getLiveTrafficIcon } from '../data/mapConfig';
 import { calculateRoute } from '../utils/geoUtils';
+import { CRITICAL_INFRASTRUCTURE_ZONES, getFlightStatusLabel } from '../data/criticalInfrastructure';
 
 export function MapController({ centerCoords, activeTab }) {
   const map = useMap();
@@ -53,7 +54,8 @@ export default function MapSection({
   drones,
   setSelectedDroneId,
   timelineEvents,
-  exportOperationalReport
+  exportOperationalReport,
+  liveAirTraffic
 }) {
   return (
     <section className="flex-1 glass-panel rounded-xl relative overflow-hidden border border-white/5 bg-[#050507]">
@@ -67,61 +69,112 @@ export default function MapSection({
           <MapController centerCoords={mapFocusCoords} activeTab={activeTab} />
           <MapClickHandler onMapClick={(coords) => setDraftMission(prev => ({...prev, targetCoords: coords}))} setActiveTab={setActiveTab} />
           
-          {showOrtoLayer ? (
-            <WMSTileLayer
-              url="https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMS/StandardResolution"
-              layers="Raster"
-              format="image/png"
-              transparent={true}
-              version="1.3.0"
-              attribution="Ortofotomapa: Geoportal.gov.pl"
-            />
-          ) : (
-            <TileLayer
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-            />
-          )}
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          />
+          <TileLayer
+            url="https://mapy.geoportal.gov.pl/wss/service/PZGIK/ORTO/WMTS/StandardResolution?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=Raster&STYLE=default&TILEMATRIXSET=EPSG:3857&TILEMATRIX=EPSG:3857:{z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png"
+            opacity={showOrtoLayer ? 1 : 0}
+            attribution="Ortofotomapa: Geoportal.gov.pl"
+            keepBuffer={24}
+            updateWhenZooming={false}
+            updateWhenIdle={true}
+            maxZoom={19}
+            className="transition-opacity duration-500"
+          />
 
-          {/* HSW - P-01 Zone */}
-          <Circle 
-            center={[50.5510, 22.0460]} 
-            radius={1500} 
-            pathOptions={{ color: '#ef4444', fillOpacity: 0.1, weight: 1, dashArray: '4,6' }}
-            eventHandlers={{
-              click: (e) => {
-                setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
-                setActiveTab('planner');
-              }
-            }}
-          >
-            <Tooltip direction="top" opacity={0.95} sticky>
-              <div className="text-xs">
-                <strong className="text-error">STREFA ZAKAZANA P-01 (HSW)</strong>
-                <p className="mt-1 text-slate-300">Zakłady Zbrojeniowe. Loty bezwzględnie zakazane bez autoryzacji MON.</p>
-              </div>
-            </Tooltip>
-          </Circle>
-
-          {/* Power Plant - R-05 Zone */}
-          <Circle 
-            center={[50.5841, 22.0523]} 
-            radius={800} 
-            pathOptions={{ color: '#f59e0b', fillOpacity: 0.1, weight: 1 }}
-            eventHandlers={{
-              click: (e) => {
-                setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
-                setActiveTab('planner');
-              }
-            }}
-          >
-            <Tooltip direction="top" opacity={0.95} sticky>
-              <div className="text-xs">
-                <strong className="text-orange-500">STREFA BUFOROWA R-05 (ECSW)</strong>
-                <p className="mt-1 text-slate-300">Elektrociepłownia Stalowa Wola. Zagrożenie EM: zakłócenia GPS/kompasu w promieniu 300m.</p>
-                <p className="mt-1 text-slate-500 text-[9px]">Operacyjna strefa buforowa zdefiniowana przez SkyMarshal C2</p>
-              </div>
-            </Tooltip>
-          </Circle>
+          {CRITICAL_INFRASTRUCTURE_ZONES.map(zone => (
+            <React.Fragment key={zone.id}>
+              {zone.polygon ? (
+                <>
+                  <Polygon
+                    positions={zone.polygon}
+                    pathOptions={{ color: zone.color, fillOpacity: 0.035, opacity: 0.55, weight: 1, dashArray: '8,8' }}
+                    eventHandlers={{
+                      click: (e) => {
+                        setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
+                        setActiveTab('planner');
+                      }
+                    }}
+                  />
+                  <Polygon
+                    positions={zone.polygon}
+                    pathOptions={{ color: zone.color, fillOpacity: 0.18, opacity: 0.95, weight: 2 }}
+                    eventHandlers={{
+                      click: (e) => {
+                        setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
+                        setActiveTab('planner');
+                      }
+                    }}
+                  >
+                    <Tooltip direction="top" opacity={0.98} sticky>
+                      <div className="text-xs max-w-[260px]">
+                        <strong style={{ color: zone.color }}>{zone.name.toUpperCase()}</strong>
+                        <p className="mt-1 text-white font-bold">{getFlightStatusLabel(zone.status)}</p>
+                        {zone.authorizationClass && (
+                          <p className="mt-1 text-[#6366f1] font-mono text-[10px] uppercase">{zone.authorizationClass}</p>
+                        )}
+                        <p className="mt-1 text-slate-300">{zone.situation}</p>
+                        <p className="mt-1 text-slate-400">{zone.rule}</p>
+                        <p className="mt-1 text-slate-500 text-[9px]">Źródło: {zone.source}</p>
+                      </div>
+                    </Tooltip>
+                    <Tooltip permanent direction="center" className="infra-zone-label" opacity={0.95}>
+                      <span style={{ color: zone.color }}>{zone.shortName}</span>
+                    </Tooltip>
+                  </Polygon>
+                </>
+              ) : (
+                <>
+                  <Circle
+                    center={zone.center}
+                    radius={zone.advisoryRadius}
+                    pathOptions={{ color: zone.color, fillOpacity: 0.035, opacity: 0.55, weight: 1, dashArray: '8,8' }}
+                    eventHandlers={{
+                      click: (e) => {
+                        setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
+                        setActiveTab('planner');
+                      }
+                    }}
+                  />
+                  <Circle
+                    center={zone.center}
+                    radius={zone.radius}
+                    pathOptions={{ color: zone.color, fillOpacity: 0.18, opacity: 0.95, weight: 2 }}
+                    eventHandlers={{
+                      click: (e) => {
+                        setDraftMission(prev => ({...prev, targetCoords: [e.latlng.lat, e.latlng.lng]}));
+                        setActiveTab('planner');
+                      }
+                    }}
+                  >
+                    <Tooltip direction="top" opacity={0.98} sticky>
+                      <div className="text-xs max-w-[260px]">
+                        <strong style={{ color: zone.color }}>{zone.name.toUpperCase()}</strong>
+                        <p className="mt-1 text-white font-bold">{getFlightStatusLabel(zone.status)}</p>
+                        <p className="mt-1 text-slate-300">{zone.situation}</p>
+                        <p className="mt-1 text-slate-400">{zone.rule}</p>
+                        <p className="mt-1 text-slate-500 text-[9px]">Źródło: {zone.source}</p>
+                      </div>
+                    </Tooltip>
+                    <Tooltip permanent direction="center" className="infra-zone-label" opacity={0.95}>
+                      <span style={{ color: zone.color }}>{zone.shortName}</span>
+                    </Tooltip>
+                  </Circle>
+                </>
+              )}
+              <Marker position={zone.center} icon={getInfrastructureIcon(zone)}>
+                <Popup>
+                  <div className="text-xs max-w-[260px]">
+                    <strong style={{ color: zone.color }}>{zone.name}</strong>
+                    <p className="mt-1 text-white font-bold">{getFlightStatusLabel(zone.status)}</p>
+                    <p className="mt-1 text-slate-300">{zone.situation}</p>
+                    <p className="mt-1 text-slate-400">{zone.rule}</p>
+                  </div>
+                </Popup>
+              </Marker>
+            </React.Fragment>
+          ))}
 
           {/* EPST - Lotnisko Turbia ATZ Zone */}
           <Circle 
@@ -137,8 +190,8 @@ export default function MapSection({
           >
             <Tooltip direction="top" opacity={0.95} sticky>
               <div className="text-xs">
-                <strong className="text-pink-500">STREFA KONTROLNA LOTNISKA EPST (ATZ TURBIA)</strong>
-                <p className="mt-1 text-slate-300">Aeroklub Stalowowolski. Aktywny ruch szybowców i skoczków spadochronowych. Wymagana koordynacja radiowa i wzmożona czujność (U-Space/ADS-B).</p>
+                <strong className="text-pink-500">RUCH GA: EPST TURBIA</strong>
+                <p className="mt-1 text-slate-300">Aeroklub Stalowowolski. Warstwa pokazuje potrzebę dekonfliktacji z ruchem załogowym i koordynacji z zarządzającym lotniskiem.</p>
               </div>
             </Tooltip>
           </Circle>
@@ -161,15 +214,6 @@ export default function MapSection({
             </Popup>
           </Marker>
           
-          <Marker position={[50.5721, 22.0315]} icon={waterStationIcon}>
-            <Popup>
-              <div className="text-xs text-center">
-                <strong className="text-green-500">UJĘCIE WODY</strong>
-                <p className="mt-1 text-on-surface-variant">Infrastruktura zabezpieczona</p>
-              </div>
-            </Popup>
-          </Marker>
-
           {drones.map(drone => (
             drone.coordinates && (
               <Marker 
@@ -209,6 +253,24 @@ export default function MapSection({
             return null;
           })}
 
+          {liveAirTraffic && liveAirTraffic.map(plane => (
+            <Marker 
+              key={plane.icao24} 
+              position={[plane.lat, plane.lng]} 
+              icon={getLiveTrafficIcon(plane.trueTrack)}
+              zIndexOffset={100}
+            >
+              <Tooltip direction="top" opacity={0.9} className="border border-pink-400/30">
+                <div className="text-xs">
+                  <strong className="text-pink-400 font-mono text-sm">{plane.callsign}</strong>
+                  <p className="mt-1 text-white font-bold">{Math.round(plane.altitude)} m AMSL</p>
+                  <p className="text-slate-300">V: {Math.round(plane.velocity * 3.6)} km/h</p>
+                  <p className="text-slate-400 text-[9px] mt-1">Kraj: {plane.country}</p>
+                </div>
+              </Tooltip>
+            </Marker>
+          ))}
+
           {activeTab === 'planner' && draftMission.targetCoords && (
             <>
               <Marker position={draftMission.targetCoords} opacity={0.8}>
@@ -233,13 +295,38 @@ export default function MapSection({
         </MapContainer>
       </div>
 
+      <div className="absolute top-6 left-6 z-[400] bg-surface/85 backdrop-blur-md border border-white/10 rounded-lg p-3 w-[280px] pointer-events-auto">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h4 className="text-[10px] font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[14px] text-error">domain_verification</span>
+            Strefy infrastruktury
+          </h4>
+          <span className="text-[9px] text-on-surface-variant">{CRITICAL_INFRASTRUCTURE_ZONES.length} obszarów</span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {CRITICAL_INFRASTRUCTURE_ZONES.map(zone => (
+            <button
+              key={zone.id}
+              onClick={() => setMapFocusCoords(zone.center)}
+              className="flex items-center justify-between gap-1 rounded border border-white/10 bg-black/20 hover:bg-black/35 px-2 py-1.5 transition cursor-pointer"
+              title={`${zone.name}: ${zone.rule}`}
+            >
+              <span className="text-[9px] font-black" style={{ color: zone.color }}>{zone.shortName}</span>
+              <span className={`text-[8px] font-bold ${zone.status === 'CAUTION' ? 'text-amber-300' : 'text-error'}`}>
+                {getFlightStatusLabel(zone.status)}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Mini Timeline (Bottom Left) */}
       <div className="absolute bottom-6 left-6 z-[400] bg-surface/80 backdrop-blur-md border border-white/10 rounded-lg p-3 max-h-[160px] overflow-y-auto w-[280px] space-y-2 pointer-events-auto">
         <h4 className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-2 flex items-center justify-between">
           <span className="flex items-center gap-1.5"><span className="material-symbols-outlined text-[14px]">history</span> DZIENNIK ZDARZEŃ</span>
           <button 
             onClick={exportOperationalReport} 
-            title="Generuj Raport SWD-ST (.txt)" 
+            title="Generuj roboczy raport (.txt)" 
             className="p-1 rounded bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary flex items-center justify-center transition cursor-pointer"
           >
             <span className="material-symbols-outlined text-[12px] font-bold">download</span>

@@ -30,6 +30,19 @@ export const turbiaAirportIcon = L.divIcon({
   popupAnchor: [0, -16]
 });
 
+export const getInfrastructureIcon = (zone) => L.divIcon({
+  className: 'custom-leaflet-icon',
+  html: `<div style="width: 58px; height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px;">
+    <div style="width: 30px; height: 30px; border-radius: 6px; border: 2px solid ${zone.color}; background: rgba(9, 9, 11, 0.92); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 16px ${zone.color};">
+      <span class="material-symbols-outlined" style="font-size: 17px; color: ${zone.color}; font-weight: 700;">${zone.icon}</span>
+    </div>
+    <div style="max-width: 58px; border: 1px solid rgba(255,255,255,0.22); border-radius: 3px; padding: 1px 4px; background: rgba(2,2,3,0.82); color: ${zone.color}; font-size: 9px; line-height: 12px; font-weight: 900; text-align: center; white-space: nowrap; box-shadow: 0 0 10px rgba(0,0,0,0.8);">${zone.shortName}</div>
+  </div>`,
+  iconSize: [58, 44],
+  iconAnchor: [29, 15],
+  popupAnchor: [0, -15]
+});
+
 export const getDroneIcon = (department, isLinkLost = false) => {
   let color = isLinkLost ? '#ef4444' : '#6366f1';
   if (!isLinkLost) {
@@ -51,5 +64,17 @@ export const getDroneIcon = (department, isLinkLost = false) => {
     iconSize: [28, 28],
     iconAnchor: [14, 14],
     popupAnchor: [0, -14]
+  });
+};
+
+export const getLiveTrafficIcon = (track) => {
+  return L.divIcon({
+    className: 'custom-leaflet-icon',
+    html: `<div style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; transform: rotate(${track - 45}deg);">
+      <span class="material-symbols-outlined text-pink-400" style="font-size: 20px; text-shadow: 0 0 5px rgba(236, 72, 153, 0.8);">flight</span>
+    </div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12]
   });
 };

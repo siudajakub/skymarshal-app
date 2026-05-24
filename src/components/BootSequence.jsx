@@ -1,40 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+
+const BOOT_LOGS = [
+  '» INICJOWANIE BEZPIECZNEGO POŁĄCZENIA Z TAC-NET...',
+  '» NAWIĄZYWANIE TUNELU VPN (IPsec AES-256)...',
+  '» ŁADOWANIE RÓL DEMONSTRACYJNYCH C2...',
+  '» SYMULACJA PROCESU ZGŁOSZENIA UTM / DRONETOWER...',
+  '» POBIERANIE DANYCH GEOPORTAL.GOV.PL (WMS ORTO)...',
+  '» ŁADOWANIE ROUTERA OPERACYJNEGO PROTOTYPU...',
+  '» ŁADOWANIE DEMONSTRACYJNEJ TELEMETRII FLOTY UAV I RUCHU GA...',
+  '» PRZYGOTOWANIE ROBOCZEGO RAPORTU DYSPOZYTORSKIEGO...',
+  '» STATUS: PROTOTYP OPERACYJNY GOTOWY DO DEMONSTRACJI.',
+  '» DOSTĘP PRZYZNANY. WITAJ W SKYMARSHAL C2.'
+];
 
 export default function BootSequence({ onAuthSuccess }) {
-  const [role, setRole] = useState('KSP');
+  const [role, setRole] = useState('KPP');
   const [pin, setPin] = useState('');
+  const [loginError, setLoginError] = useState('');
   const [stage, setStage] = useState('login'); // 'login', 'booting', 'success'
   const [bootLogs, setBootLogs] = useState([]);
   const [currentLogIndex, setCurrentLogIndex] = useState(0);
 
-  const logs = [
-    '» INICJOWANIE BEZPIECZNEGO POŁĄCZENIA Z TAC-NET...',
-    '» NAWIĄZYWANIE TUNELU VPN (IPsec AES-256)...',
-    '» AUTORYZACJA KLUCZA KRYPTOGRAFICZNEGO MON-C2...',
-    '» SYNC: PANSA UTM GATEWAY (STALOWA WOLA)...',
-    '» POBIERANIE DANYCH GEOPORTAL.GOV.PL (WMS ORTO)...',
-    '» ŁADOWANIE SILNIKA OMIJANIA STREF (ARC AVOIDANCE)...',
-    '» POBIERANIE TELEMETRII FLOTY (4 AKTYWNE JEDNOSTKI)...',
-    '» DESKRYPCJA BAZY DANYCH KRYZYSOWYCH SWD-ST...',
-    '» STATUS: POŁĄCZONO NOMINALNIE. INTEGRACJA 100%.',
-    '» DOSTĘP PRZYZNANY. WITAJ W SKYMARSHAL C2.'
-  ];
-
   const handleLogin = (e) => {
     e.preventDefault();
-    if (!pin) {
-      alert('Wprowadź kod PIN autoryzacyjny.');
+    if (pin !== '1092') {
+      setLoginError('Nieprawidłowy PIN. Użyj kodu demonstracyjnego 1092.');
       return;
     }
+    setLoginError('');
     setStage('booting');
   };
 
   useEffect(() => {
     if (stage !== 'booting') return;
 
-    if (currentLogIndex < logs.length) {
+    if (currentLogIndex < BOOT_LOGS.length) {
       const timer = setTimeout(() => {
-        setBootLogs(prev => [...prev, logs[currentLogIndex]]);
+        setBootLogs(prev => [...prev, BOOT_LOGS[currentLogIndex]]);
         setCurrentLogIndex(prev => prev + 1);
         // Play click/beep sound if possible
         try {
@@ -51,7 +53,9 @@ export default function BootSequence({ onAuthSuccess }) {
             osc.start();
             osc.stop(ctx.currentTime + 0.05);
           }
-        } catch (e) {}
+        } catch {
+          // Dźwięk startowy jest dodatkiem demonstracyjnym; system działa także bez Web Audio.
+        }
       }, 250);
       return () => clearTimeout(timer);
     } else {
@@ -72,11 +76,14 @@ export default function BootSequence({ onAuthSuccess }) {
             osc.start();
             osc.stop(ctx.currentTime + 0.25);
           }
-        } catch (e) {}
+        } catch {
+          // Brak obsługi Web Audio nie blokuje wejścia do prototypu.
+        }
         onAuthSuccess(role);
       }, 600);
       return () => clearTimeout(timer);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, currentLogIndex]);
 
   return (
@@ -100,7 +107,7 @@ export default function BootSequence({ onAuthSuccess }) {
                 <span>SKY</span><span className="text-primary">MARSHAL</span>
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(99,102,241,0.8)]"></span>
               </h1>
-              <p className="text-[10px] text-on-surface-variant tracking-[0.2em] uppercase mt-1">System Koordynacji i Zarządzania C2</p>
+              <p className="text-[10px] text-on-surface-variant tracking-[0.2em] uppercase mt-1">Centrum Koordynacji i Zarządzania Kryzysowego C2</p>
             </div>
 
             <div className="space-y-4">
@@ -108,8 +115,8 @@ export default function BootSequence({ onAuthSuccess }) {
                 <label className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider block mb-2">Rola Operacyjna</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'KSP', name: 'Policja (KSP)' },
-                    { id: 'PSP', name: 'Straż (PSP)' },
+                    { id: 'KPP', name: 'Policja (KPP)' },
+                    { id: 'PSP', name: 'Straż (KP PSP)' },
                     { id: 'MON', name: 'MON / Sztab' }
                   ].map(r => (
                     <button
@@ -133,6 +140,9 @@ export default function BootSequence({ onAuthSuccess }) {
                   onChange={(e) => setPin(e.target.value)}
                   className="w-full bg-white/[0.03] border border-white/10 rounded px-4 py-2.5 text-center font-bold tracking-widest text-lg outline-none focus:border-primary/50 text-white transition-all placeholder:text-[11px] placeholder:tracking-normal placeholder:font-normal"
                 />
+                {loginError && (
+                  <p className="mt-2 text-[10px] text-error font-bold uppercase tracking-wide">{loginError}</p>
+                )}
               </div>
             </div>
 
@@ -147,7 +157,7 @@ export default function BootSequence({ onAuthSuccess }) {
             </div>
 
             <div className="text-[9px] text-center text-on-surface-variant opacity-50">
-              UŻYCIE SYSTEMU MONITROWANE • ZGODNOŚĆ Z REGULACJAMI PAŻP & EASA
+              PROTOTYP HACKATHONOWY • PUBLICZNE ŹRÓDŁA + SYMULACJA UTM • EASA/PAŻP JAKO ŚCIEŻKA INTEGRACJI
             </div>
           </form>
         )}
@@ -159,7 +169,7 @@ export default function BootSequence({ onAuthSuccess }) {
                 <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
                 NAWIĄZYWANIE POŁĄCZENIA TAC-NET
               </span>
-              <span className="text-[10px] text-on-surface-variant">{Math.round((currentLogIndex / logs.length) * 100)}%</span>
+              <span className="text-[10px] text-on-surface-variant">{Math.round((currentLogIndex / BOOT_LOGS.length) * 100)}%</span>
             </div>
 
             <div className="h-60 overflow-y-auto space-y-1.5 font-mono text-[10px] leading-relaxed scrollbar-none pr-1">
@@ -168,7 +178,7 @@ export default function BootSequence({ onAuthSuccess }) {
                   {log}
                 </div>
               ))}
-              {currentLogIndex < logs.length && (
+              {currentLogIndex < BOOT_LOGS.length && (
                 <div className="text-primary animate-pulse flex items-center">
                   » PRZETWARZANIE...<span className="w-1.5 h-3 bg-primary ml-1 inline-block animate-blink"></span>
                 </div>
@@ -176,7 +186,7 @@ export default function BootSequence({ onAuthSuccess }) {
             </div>
 
             <div className="w-full bg-white/5 h-1 rounded overflow-hidden">
-              <div className="bg-primary h-full transition-all duration-200" style={{ width: `${(currentLogIndex / logs.length) * 100}%` }}></div>
+              <div className="bg-primary h-full transition-all duration-200" style={{ width: `${(currentLogIndex / BOOT_LOGS.length) * 100}%` }}></div>
             </div>
           </div>
         )}
