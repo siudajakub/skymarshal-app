@@ -4,6 +4,10 @@
 
 Prototyp demonstracyjnie koordynuje rozproszone floty bezzałogowych statków powietrznych (UAV) podlegające różnym służbom miejskim i ratowniczym (Policja, Państwowa Straż Pożarna, Ochotnicza Straż Pożarna, Centrum Zarządzania Kryzysowego). Nie ma prawdziwego dostępu do PAŻP/DroneTower, SWD-ST, MON ani prywatnych baz danych; pokazuje realistyczny proces i gotową ścieżkę integracji pilotażowej.
 
+## 🎥 Prezentacja Wideo (Demo)
+Obejrzyj nagranie demonstracyjne przedstawiające działanie systemu w serwisie Vimeo:
+👉 [**Prezentacja wideo SkyMarshal C2**](https://vimeo.com/1195096071?share=copy&fl=sv&fe=ci)
+
 ---
 
 ## 🗺️ Główne Funkcjonalności Systemu
@@ -50,11 +54,9 @@ Aplikacja została zbudowana z zachowaniem najwyższych standardów wydajnościo
 
 Dla pełnej przejrzystości i spójności projektu, w repozytorium znajdują się dedykowane pliki dokumentacji:
 
-1.  [**`README.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/README.md) – Niniejszy plik wprowadzający i instrukcja uruchomienia.
-2.  [**`ARCHITECTURE.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/ARCHITECTURE.md) – Docelowa architektura pilotażowa i przyszłe punkty integracji z DJI Cloud API, PansaUTM/PAŻP, systemami SWD-ST oraz bazą danych PostgreSQL/PostGIS.
-3.  [**`SOURCES.md`**](file:///Users/j/Spaceshield/dualuse/skymarshal-app/SOURCES.md) – Wykaz jawnych publicznych źródeł danych przestrzennych i prawnych (wymóg formalny regulaminu).
-4.  [**`PITCH_DECK.md`**](file:///Users/j/Spaceshield/dualuse/PITCH_DECK.md) – Gotowy szablon prezentacji inwestycyjnej (10 slajdów) oraz profesjonalny scenariusz wideo demonstracyjnego dla jury.
-5.  [**`AGENTS.MD`**](file:///Users/j/Spaceshield/dualuse/AGENTS.MD) – Dynamiczna karta stanu projektu dla deweloperów i agentów AI (Context Compact).
+1.  [**`README.md`**](README.md) – Niniejszy plik wprowadzający i instrukcja uruchomienia.
+2.  [**`ARCHITECTURE.md`**](ARCHITECTURE.md) – Docelowa architektura pilotażowa i przyszłe punkty integracji z DJI Cloud API, PansaUTM/PAŻP, systemami SWD-ST oraz bazą danych PostgreSQL/PostGIS.
+3.  [**`SOURCES.md`**](SOURCES.md) – Wykaz jawnych publicznych źródeł danych przestrzennych i prawnych (wymóg formalny regulaminu).
 
 ---
 
