@@ -5,8 +5,10 @@
 Prototyp demonstracyjnie koordynuje rozproszone floty bezzałogowych statków powietrznych (UAV) podlegające różnym służbom miejskim i ratowniczym (Policja, Państwowa Straż Pożarna, Ochotnicza Straż Pożarna, Centrum Zarządzania Kryzysowego). Nie ma prawdziwego dostępu do PAŻP/DroneTower, SWD-ST, MON ani prywatnych baz danych; pokazuje realistyczny proces i gotową ścieżkę integracji pilotażowej.
 
 ## 🎥 Prezentacja Wideo (Demo)
-Obejrzyj nagranie demonstracyjne przedstawiające działanie systemu w serwisie Vimeo:
-👉 [**Prezentacja wideo SkyMarshal C2**](https://vimeo.com/1195096071?share=copy&fl=sv&fe=ci)
+
+Kliknij poniższy odtwarzacz, aby obejrzeć nagranie demonstracyjne przedstawiające działanie systemu w serwisie Vimeo:
+
+[![Prezentacja wideo SkyMarshal C2](https://vumbnail.com/1195096071.jpg)](https://vimeo.com/1195096071?share=copy&fl=sv&fe=ci)
 
 ---
 
