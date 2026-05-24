@@ -1,96 +1,90 @@
-# 🌌 SKYMARSHAL C2 TAC-NET: System Taktycznego Zarządzania i Koordynacji Flotą UAV
+# 🌌 SkyMarshal C2 – System Zarządzania Flotą Dronów (Dual-Use)
 
-**SKYMARSHAL C2 TAC-NET** (Tactical Command & Control Network) to zaawansowana, wielozadaniowa platforma dyspozytorska klasy **dual-use** (podwójnego zastosowania), zaprojektowana specjalnie dla miasta Stalowa Wola w ramach hackathonu **SpaceShield Hack 2026**.
+**SkyMarshal C2** to aplikacja dyspozytorska stworzona na hackathon **SpaceShield Hack 2026** z myślą o koordynacji lotów bezzałogowych (UAV) na terenie Stalowej Woli. System pozwala na współpracę różnych służb miejskich i ratowniczych (Policja, Straż Pożarna, CZK) we wspólnej przestrzeni powietrznej.
 
-Prototyp demonstracyjnie koordynuje rozproszone floty bezzałogowych statków powietrznych (UAV) podlegające różnym służbom miejskim i ratowniczym (Policja, Państwowa Straż Pożarna, Ochotnicza Straż Pożarna, Centrum Zarządzania Kryzysowego). Nie ma prawdziwego dostępu do PAŻP/DroneTower, SWD-ST, MON ani prywatnych baz danych; pokazuje realistyczny proces i gotową ścieżkę integracji pilotażowej.
+*Uwaga: Jest to prototyp demonstracyjny pokazujący pomysł na integrację systemów. Nie jest połączony z prawdziwymi systemami państwowymi (PANSA/PAŻP, SWD-ST, MON) ani komercyjnymi bazami danych.*
+
+---
 
 ## 🎥 Prezentacja Wideo (Demo)
 
-Kliknij poniższy odtwarzacz, aby obejrzeć nagranie demonstracyjne przedstawiające działanie systemu w serwisie Vimeo:
+Kliknij poniższy odtwarzacz, aby obejrzeć nagranie demonstracyjne w serwisie Vimeo:
 
 [![Prezentacja wideo SkyMarshal C2](https://vumbnail.com/1195096071.jpg)](https://vimeo.com/1195096071?share=copy&fl=sv&fe=ci)
 
 ---
 
-## 🗺️ Główne Funkcjonalności Systemu
+## 🗺️ Co potrafi system?
 
-### 1. Integracja z GUGiK WMS (Ortofotomapa)
-*   Dynamiczny podkład satelitarny wysokiej rozdzielczości pobierany na żywo bezpośrednio z rządowych serwerów **Geoportal.gov.pl** (Główny Urząd Geodezji i Kartografii).
-*   Możliwość szybkiego przełączania między minimalistycznym trybem taktycznym (bazującym na ciemnym podkładzie kartograficznym ułatwiającym percepcję telemetryczną) a trybem **GUGiK ORTO** dla maksymalnej precyzji terenowej.
+### 1. Podkład mapowy z serwerów GUGiK (Geoportal)
+*   Pobieranie na żywo ortofotomapy z rządowych serwerów WMS (**Geoportal.gov.pl**).
+*   Możliwość szybkiego przełączania między ciemnym trybem taktycznym (czytelniejszym w nocy) a mapą satelitarną GUGiK dla dokładniejszego zwiadu w terenie.
 
-### 2. Koordynacja Służb Ratowniczych i Mundurowych (Dual-use)
-*   **Scenariusz masowy/kryzysowy**: Jedno przyciskowe wyzwalanie skoordynowanej akcji w przypadku zmasowanego pożaru lub naruszenia bezpieczeństwa na terenie Zakładów Huty Stalowa Wola (HSW).
-*   Automatyczne delegowanie wielu jednostek (np. dron Policji do zabezpieczenia obwodu i dron Straży Pożarnej do zwiadu termowizyjnego) do wspólnego celu z różnymi pułapami operacyjnymi w celu dekonfliktacji.
+### 2. Koordynacja wielu służb (Dual-use)
+*   **Wspólne misje**: Szybkie uruchamianie akcji jednym kliknięciem (np. w przypadku zagrożenia na terenie Huty Stalowa Wola).
+*   System automatycznie deleguje odpowiednie drony do jednego zdarzenia (np. dron Policji zabezpiecza teren z góry, a dron Straży Pożarnej prowadzi zwiad termowizyjny), przydzielając im różne wysokości lotu, aby uniknąć kolizji.
 
-### 3. Router Operacyjny Prototypu
-*   **Multi-Point Straight-Segment Bypass**: demonstracyjny router wyznaczania bezpiecznych trajektorii lotu omijający modelową operacyjną strefę ochronną **HSW**.
-*   System automatycznie analizuje linię prostą między startem a celem, wykrywa kolizję z obszarem chronionym oraz generuje ciasny wielobok omijający (3 punkty pośrednie z bezpiecznym buforem 300 metrów), co eliminuje konieczność wykonywania nadrabiających drogę, okrężnych tras.
+### 3. Inteligentne omijanie strefy HSW
+*   **Router omijania stref (Bypass)**: Jeśli trasa lotu przebiega przez chroniony obszar Huty Stalowa Wola, algorytm automatycznie wyznacza trajektorię omijającą tę strefę (tworzy wielobok z bezpiecznym buforem 300 metrów). Dzięki temu dron omija strefę bez konieczności planowania okrężnej trasy na około całego miasta.
 
-### 4. Przepisy U-Space i Symulacja Zgłoszenia UTM
-*   **Weryfikacja Pułapów**: Sztywne ograniczenie wysokości lotu do **120m AGL** (Above Ground Level) w Kreatorze Misji zgodnie z przepisami kategorii Otwartej EASA/ULC z systemem ostrzeżeń.
-*   **Symulacja procesu PAŻP/DroneTower**: Emulacja zgłaszania planów lotu i przydzielania roboczego kodu **XPNDR**. Nie jest to prawdziwe zatwierdzenie ani realna integracja z krajowym systemem UTM.
-*   **Monitoring Zakłóceń EM**: Ostrzeżenia przed anomaliami elektromagnetycznymi i radiowymi w strefie Elektrociepłowni Stalowa Wola **R-05** z dynamicznym wykresem szumu tła.
+### 4. Zgodność z przepisami i integracja z UTM
+*   **Weryfikacja wysokości**: Kreator misji blokuje planowanie lotów powyżej **120 metrów AGL** (zgodnie z unijnymi przepisami kategorii otwartej).
+*   **Symulacja planów lotu (UTM)**: Prototyp symuluje proces zgłaszania lotu do PAŻP/DroneTower i przydziela fikcyjny kod transpondera (**XPNDR**).
+*   **Monitoring zakłóceń**: Ostrzega pilota o wysokim poziomie zakłóceń elektromagnetycznych w pobliżu Elektrociepłowni Stalowa Wola (strefa R-05), pokazując wykres szumu w czasie rzeczywistym.
 
-### 5. Nowoczesny i Ergonomiczny Kreator Misji (Side-by-side)
-*   Przebudowany interfejs w układzie side-by-side umieszczający panel planowania obok interaktywnej mapy, co całkowicie zapobiega zasłanianiu obszaru operacyjnego.
-*   W pełni interaktywne wskazywanie celów poprzez kliknięcie na mapie.
-
-### 6. Procedury Operacyjne Służb
-*   Dedykowany panel prezentujący stan gotowości procedur operacyjnych (Zabezpieczanie Terenu, Skan Termiczny, Powrót Awaryjny RTH po wyczerpaniu akumulatora).
+### 5. Wygodny Kreator Misji
+*   Interfejs w układzie dwukolumnowym (side-by-side) – panel z formularzem znajduje się obok mapy, więc nic jej nie zasłania podczas planowania.
+*   Wskazywanie celów misji bezpośrednio kliknięciem na mapie.
 
 ---
 
-## 🛠️ Stos Technologiczny (Tech Stack)
+## 🛠️ Użyte technologie
 
-Aplikacja została zbudowana z zachowaniem najwyższych standardów wydajnościowych oraz estetycznych:
-
-*   **Szkielet aplikacyjny**: React 19 (Vite)
-*   **Silnik mapowy**: React Leaflet / Leaflet.js
-*   **Warstwa wizualizacji danych**: Recharts (dynamiczne wykresy szumu elektromagnetycznego na żywo)
-*   **Stylizacja i UX**: Vanilla CSS + Tailwind CSS (szklany efekt *glassmorphism*, wyszukana paleta ciemnych barw taktycznych, płynne mikro-animacje i przejścia)
-*   **Efekty Dźwiękowe**: Web Audio API (dynamicznie generowane dźwięki sonaru i alertów bezpośrednio w przeglądarce, bez zewnętrznych plików audio).
+*   **Frontend**: React 19, Vite
+*   **Mapa**: React Leaflet / Leaflet.js
+*   **Wykresy**: Recharts (wykres zakłóceń radiowych)
+*   **Stylizacja**: Vanilla CSS + Tailwind CSS (ciemny interfejs taktyczny z efektem glassmorphism, płynne animacje)
+*   **Dźwięki systemowe**: Web Audio API (dźwięki sonaru i alertów generowane są bezpośrednio przez przeglądarkę, bez wczytywania ciężkich plików audio)
 
 ---
 
-## 📂 Struktura Dokumentacji Projektowej
+## 📂 Struktura dokumentacji
 
-Dla pełnej przejrzystości i spójności projektu, w repozytorium znajdują się dedykowane pliki dokumentacji:
-
-1.  [**`README.md`**](README.md) – Niniejszy plik wprowadzający i instrukcja uruchomienia.
-2.  [**`ARCHITECTURE.md`**](ARCHITECTURE.md) – Docelowa architektura pilotażowa i przyszłe punkty integracji z DJI Cloud API, PansaUTM/PAŻP, systemami SWD-ST oraz bazą danych PostgreSQL/PostGIS.
-3.  [**`SOURCES.md`**](SOURCES.md) – Wykaz jawnych publicznych źródeł danych przestrzennych i prawnych (wymóg formalny regulaminu).
+W repozytorium znajdziesz:
+*   [**`README.md`**](README.md) – Ten plik (opis i instrukcja uruchomienia).
+*   [**`ARCHITECTURE.md`**](ARCHITECTURE.md) – Opis architektury technicznej, schematów integracji (DJI Cloud API, PansaUTM) i propozycji bazy danych.
+*   [**`SOURCES.md`**](SOURCES.md) – Wykaz źródeł danych geograficznych i prawnych wykorzystanych w projekcie.
 
 ---
 
-## 🚀 Uruchomienie Lokalne i Budowa
+## 🚀 Jak uruchomić projekt lokalnie?
 
-Aby uruchomić aplikację w lokalnym środowisku deweloperskim:
+### Wymagania
+Musisz mieć zainstalowany **Node.js** (wersja 18 lub nowsza) oraz **npm**.
 
-### Wymagania wstępne
-Upewnij się, że masz zainstalowane środowisko **Node.js** (rekomendowana wersja v18 lub nowsza) oraz **npm**.
-
-### Klonowanie i instalacja zależności
-Przejdź do folderu aplikacji:
-```bash
-cd skymarshal-app
-npm install
-```
-
-### Uruchomienie serwera deweloperskiego
-Uruchom lokalny serwer Vite:
-```bash
-npm run dev
-```
-Aplikacja będzie dostępna pod adresem: [**http://localhost:5173/**](http://localhost:5173/)
+### Instalacja i uruchomienie
+1. Wejdź do folderu z projektem:
+   ```bash
+   cd skymarshal-app
+   ```
+2. Zainstaluj zależności:
+   ```bash
+   npm install
+   ```
+3. Uruchom serwer deweloperski:
+   ```bash
+   npm run dev
+   ```
+4. Otwórz w przeglądarce adres: [**http://localhost:5173/**](http://localhost:5173/)
 
 ### Budowanie wersji produkcyjnej
-Aby zbudować zoptymalizowaną, czystą wersję produkcyjną bez ostrzeżeń i błędów:
+Jeśli chcesz zbudować zoptymalizowaną paczkę produkcyjną:
 ```bash
 npm run build
 ```
-Zbudowane pliki trafią do katalogu `/dist`.
+Pliki zostaną zapisane w folderze `/dist`.
 
 ---
 
-## 🇵🇱 100% Spolszczony Interfejs
-Zgodnie z wymaganiami, cały interfejs użytkownika, komunikaty o błędach, opisy telemetrii HUD, priorytety incydentów oraz statusy są w 100% przetłumaczone na język polski, a atrybut językowy dokumentu w `index.html` został ustawiony na `lang="pl"`.
+## 🇵🇱 Język interfejsu
+Cały interfejs użytkownika, telemetria, opisy parametrów, komunikaty i alarmy są w 100% w języku polskim (atrybut `lang="pl"` w `index.html`).
