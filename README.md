@@ -2,6 +2,11 @@
 
 **SkyMarshal C2** to aplikacja dyspozytorska stworzona na hackathon **SpaceShield Hack 2026** z myślą o koordynacji lotów bezzałogowych (UAV) na terenie Stalowej Woli. System pozwala na współpracę różnych służb miejskich i ratowniczych (Policja, Straż Pożarna, CZK) we wspólnej przestrzeni powietrznej.
 
+🏆 **1. miejsce w kategorii Dual-Use na SpaceShield Hack 2026**  
+Projekt został wyróżniony jako najlepsze rozwiązanie w swojej kategorii, łącząc praktyczny scenariusz operacyjny, integrację danych mapowych i prototyp procesu koordynacji lotów UAV.
+
+![Zespół SkyMarshal C2 po zdobyciu 1. miejsca w kategorii Dual-Use na SpaceShield Hack 2026](assets/spaceshield-hack-2026-win.jpg)
+
 *Uwaga: Jest to prototyp demonstracyjny pokazujący pomysł na integrację systemów. Nie jest połączony z prawdziwymi systemami państwowymi (PANSA/PAŻP, SWD-ST, MON) ani komercyjnymi bazami danych.*
 
 ---
