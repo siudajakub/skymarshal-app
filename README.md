@@ -1,95 +1,89 @@
-# 🌌 SkyMarshal C2 – System Zarządzania Flotą Dronów (Dual-Use)
+# SkyMarshal C2 — SpaceShield Hack 2026 Winner
 
-**SkyMarshal C2** to aplikacja dyspozytorska stworzona na hackathon **SpaceShield Hack 2026** z myślą o koordynacji lotów bezzałogowych (UAV) na terenie Stalowej Woli. System pozwala na współpracę różnych służb miejskich i ratowniczych (Policja, Straż Pożarna, CZK) we wspólnej przestrzeni powietrznej.
+SkyMarshal C2 is a command-and-control dispatcher for coordinated, multi-agency drone operations. It combines live orthophotomaps, airspace-conflict avoidance and restricted-zone routing for emergency and municipal services operating in shared airspace.
 
-🏆 **1. miejsce w kategorii Dual-Use na SpaceShield Hack 2026**  
-Projekt został wyróżniony jako najlepsze rozwiązanie w swojej kategorii, łącząc praktyczny scenariusz operacyjny, integrację danych mapowych i prototyp procesu koordynacji lotów UAV.
+Built by [Jakub Siuda](https://www.siuda.dev/about/), Andrea Kraśko and Bahdan Dubovik as team 404 during SpaceShield Hack 2026. The project was awarded **1st place in the Dual-Use track**.
 
-![Zespół SkyMarshal C2 po zdobyciu 1. miejsca w kategorii Dual-Use na SpaceShield Hack 2026](assets/spaceshield-hack-2026-win.jpg)
+[Full case study](https://www.siuda.dev/projects/skymarshal/) · [Video demo](https://vimeo.com/1195096071?share=copy&fl=sv&fe=ci) · [Polska wersja](README.pl.md)
 
-*Uwaga: Jest to prototyp demonstracyjny pokazujący pomysł na integrację systemów. Nie jest połączony z prawdziwymi systemami państwowymi (PANSA/PAŻP, SWD-ST, MON) ani komercyjnymi bazami danych.*
+![Jakub Siuda, Andrea Kraśko and Bahdan Dubovik after winning the SpaceShield Hack 2026 Dual-Use track](assets/spaceshield-hack-2026-win.jpg)
 
----
+> SkyMarshal C2 is a demonstration prototype. It is not connected to real government, military, emergency-response or commercial aviation systems.
 
-## 🎥 Prezentacja Wideo (Demo)
+## The problem
 
-Kliknij poniższy odtwarzacz, aby obejrzeć nagranie demonstracyjne w serwisie Vimeo:
+Several agencies may need to operate drones above the same area during an emergency. Without a shared operational picture, routes can conflict, restricted zones can be crossed and teams may duplicate work. SkyMarshal C2 explores how a dispatcher could coordinate these missions from one interface.
 
-[![Prezentacja wideo SkyMarshal C2](https://vumbnail.com/1195096071.jpg)](https://vimeo.com/1195096071?share=copy&fl=sv&fe=ci)
+## What the prototype does
 
----
+### Live geospatial context
 
-## 🗺️ Co potrafi system?
+- Loads live orthophotomaps from Poland's national Geoportal WMS services.
+- Supports a dark tactical map and satellite imagery.
+- Keeps missions, aircraft and operational zones visible in one shared view.
 
-### 1. Podkład mapowy z serwerów GUGiK (Geoportal)
-*   Pobieranie na żywo ortofotomapy z rządowych serwerów WMS (**Geoportal.gov.pl**).
-*   Możliwość szybkiego przełączania między ciemnym trybem taktycznym (czytelniejszym w nocy) a mapą satelitarną GUGiK dla dokładniejszego zwiadu w terenie.
+### Multi-agency mission coordination
 
-### 2. Koordynacja wielu służb (Dual-use)
-*   **Wspólne misje**: Szybkie uruchamianie akcji jednym kliknięciem (np. w przypadku zagrożenia na terenie Huty Stalowa Wola).
-*   System automatycznie deleguje odpowiednie drony do jednego zdarzenia (np. dron Policji zabezpiecza teren z góry, a dron Straży Pożarnej prowadzi zwiad termowizyjny), przydzielając im różne wysokości lotu, aby uniknąć kolizji.
+- Creates shared missions for police, fire and crisis-management teams.
+- Assigns several drones to one incident with separated operating altitudes.
+- Gives operators a common view of roles, routes and mission status.
 
-### 3. Inteligentne omijanie strefy HSW
-*   **Router omijania stref (Bypass)**: Jeśli trasa lotu przebiega przez chroniony obszar Huty Stalowa Wola, algorytm automatycznie wyznacza trajektorię omijającą tę strefę (tworzy wielobok z bezpiecznym buforem 300 metrów). Dzięki temu dron omija strefę bez konieczności planowania okrężnej trasy na około całego miasta.
+### Restricted-zone routing
 
-### 4. Zgodność z przepisami i integracja z UTM
-*   **Weryfikacja wysokości**: Kreator misji blokuje planowanie lotów powyżej **120 metrów AGL** (zgodnie z unijnymi przepisami kategorii otwartej).
-*   **Symulacja planów lotu (UTM)**: Prototyp symuluje proces zgłaszania lotu do PAŻP/DroneTower i przydziela fikcyjny kod transpondera (**XPNDR**).
-*   **Monitoring zakłóceń**: Ostrzega pilota o wysokim poziomie zakłóceń elektromagnetycznych w pobliżu Elektrociepłowni Stalowa Wola (strefa R-05), pokazując wykres szumu w czasie rzeczywistym.
+- Detects when a route crosses the protected Huta Stalowa Wola area.
+- Generates a bypass trajectory around the restricted polygon with a safety buffer.
+- Shows the adjusted route directly on the map.
 
-### 5. Wygodny Kreator Misji
-*   Interfejs w układzie dwukolumnowym (side-by-side) – panel z formularzem znajduje się obok mapy, więc nic jej nie zasłania podczas planowania.
-*   Wskazywanie celów misji bezpośrednio kliknięciem na mapie.
+### UTM and safety simulation
 
----
+- Blocks mission planning above 120 metres AGL in the open-category scenario.
+- Simulates flight-plan submission and transponder assignment.
+- Warns operators about simulated electromagnetic interference near the Stalowa Wola power plant.
 
-## 🛠️ Użyte technologie
+### Mission builder
 
-*   **Frontend**: React 19, Vite
-*   **Mapa**: React Leaflet / Leaflet.js
-*   **Wykresy**: Recharts (wykres zakłóceń radiowych)
-*   **Stylizacja**: Vanilla CSS + Tailwind CSS (ciemny interfejs taktyczny z efektem glassmorphism, płynne animacje)
-*   **Dźwięki systemowe**: Web Audio API (dźwięki sonaru i alertów generowane są bezpośrednio przez przeglądarkę, bez wczytywania ciężkich plików audio)
+- Uses a side-by-side form and map so the operational view remains visible.
+- Allows mission targets to be selected directly on the map.
+- Presents alerts and mission parameters in a focused dispatcher interface.
 
----
+## Technology
 
-## 📂 Struktura dokumentacji
+- **Frontend:** React 19 and Vite
+- **Maps:** React Leaflet and Leaflet.js
+- **Charts:** Recharts
+- **Interface:** Vanilla CSS and Tailwind CSS
+- **Audio:** Web Audio API
+- **Map data:** GUGiK Geoportal WMS
 
-W repozytorium znajdziesz:
-*   [**`README.md`**](README.md) – Ten plik (opis i instrukcja uruchomienia).
-*   [**`ARCHITECTURE.md`**](ARCHITECTURE.md) – Opis architektury technicznej, schematów integracji (DJI Cloud API, PansaUTM) i propozycji bazy danych.
-*   [**`SOURCES.md`**](SOURCES.md) – Wykaz źródeł danych geograficznych i prawnych wykorzystanych w projekcie.
+## Documentation
 
----
+- [`ARCHITECTURE.md`](ARCHITECTURE.md) — technical architecture and proposed integrations.
+- [`SOURCES.md`](SOURCES.md) — geographic and regulatory sources used by the prototype.
+- [`README.pl.md`](README.pl.md) — complete Polish documentation.
 
-## 🚀 Jak uruchomić projekt lokalnie?
+## Run locally
 
-### Wymagania
-Musisz mieć zainstalowany **Node.js** (wersja 18 lub nowsza) oraz **npm**.
+Requires Node.js 18 or newer.
 
-### Instalacja i uruchomienie
-1. Wejdź do folderu z projektem:
-   ```bash
-   cd skymarshal-app
-   ```
-2. Zainstaluj zależności:
-   ```bash
-   npm install
-   ```
-3. Uruchom serwer deweloperski:
-   ```bash
-   npm run dev
-   ```
-4. Otwórz w przeglądarce adres: [**http://localhost:5173/**](http://localhost:5173/)
+```bash
+npm install
+npm run dev
+```
 
-### Budowanie wersji produkcyjnej
-Jeśli chcesz zbudować zoptymalizowaną paczkę produkcyjną:
+Open [http://localhost:5173/](http://localhost:5173/).
+
+Build the production bundle with:
+
 ```bash
 npm run build
 ```
-Pliki zostaną zapisane w folderze `/dist`.
 
----
+## Team 404
 
-## 🇵🇱 Język interfejsu
-Cały interfejs użytkownika, telemetria, opisy parametrów, komunikaty i alarmy są w 100% w języku polskim (atrybut `lang="pl"` w `index.html`).
+- [Jakub Siuda](https://www.siuda.dev/about/)
+- Andrea Kraśko
+- Bahdan Dubovik
+
+Jakub is a 42 Warsaw student building AI products, internal tools and rapid prototypes in Warsaw.
+
+[Portfolio](https://www.siuda.dev/) · [LinkedIn](https://www.linkedin.com/in/jksiuda/) · [Project case study](https://www.siuda.dev/projects/skymarshal/)
